@@ -1,0 +1,61 @@
+## General
+experiment_name: "Scales_1_lambda3200"
+results_path : "./results"
+
+# Model
+model:
+  entropy_model: 
+    C_in: 128
+    C_bottleneck: 128
+    num_bottlenecks: 1
+  g_a: 
+    C_in: 3
+    N1: 64
+    N2: 128
+    N3: 128
+  g_s:
+    C_out: 3
+    N1: 64
+    N2: 128
+    N3: 128
+
+## Data
+data_path: "./data/datasets/full_128"
+min_points_train: 100
+min_points_test: 0
+transforms:
+  train:
+    1_Rotate:
+      key: "RandomRotate"
+      block_size: 128
+    2_Project:
+      key: "ProjectTexture"
+      block_size: 128
+      dataset_dir: ./data/datasets
+    3_Rotate:
+      key: "RandomRotate"
+      block_size: 128
+
+## Training
+device: "2"
+epochs: 100
+batch_size: 8
+virtual_batches: false
+model_learning_rate: 0.0001
+bottleneck_learning_rate: 0.01
+optimizer: "Adam"
+scheduler_step_size: 30
+scheduler_gamma: 0.5
+clip_grad_norm: 1.0
+
+## Loss:
+loss:
+  ColorLoss:
+    type: "StackedColorLoss"
+    weight:
+      - 3200
+    loss: "L2"
+  bpp-y:
+    type: "StackedBPPLoss"
+    key: "y"
+    weight: 1.0
