@@ -14,14 +14,7 @@ class ColorModel(CompressionModel):
         self.g_a = AnalysisTransform(config["g_a"])
         self.g_s = SparseSynthesisTransform(config["g_s"])
 
-        if config["entropy_model"]["type"] == "FactorizedPrior":
-            self.entropy_model = FactorizedPrior(config["entropy_model"])
-        elif config["entropy_model"]["type"] == "MeanScaleHyperprior":
-            self.entropy_model = MeanScaleHyperpriorScales(config["entropy_model"])
-        else:
-            self.entropy_model = FactorizedPriorScaled(config["entropy_model"])
-
-
+        self.entropy_model = MeanScaleHyperprior(config["entropy_model"])
 
 
     def update(self):
@@ -40,7 +33,7 @@ class ColorModel(CompressionModel):
     
 
 
-    def forward(self, x):
+    def forward(self, x, Q):
         """
         Parameters
         ----------
@@ -52,21 +45,23 @@ class ColorModel(CompressionModel):
                                  features=torch.ones(x.C.shape[0], 1),
                                  device=x.device)
 
+        # Pad input tensor
+        x = ME.SparseTensor(coordinates=x.C.clone(),
+                            features=torch.cat([torch.ones((x.C.shape[0], 1), device=x.device), x.F], dim=1))
+
         # Analysis Transform
-        y = self.g_a(x)
+        y = self.g_a(x, Q)
 
         # Entropy Bottleneck
-        y_hats, likelihoods = self.entropy_model(y)
+        y_hat, likelihoods = self.entropy_model(y)
 
         # Synthesis Transform(s)
-        x_hats = []
-        for y_hat in y_hats:
-            x_hat = self.g_s(y_hat, coords=coords)
-            x_hats.append(x_hat)
+        x_hat = self.g_s(y_hat, coords=coords)
         
         # Building Output dictionaries
         output = {
-            "prediction": x_hats,
+            "prediction": x_hat,
+            "q_map": Q,
             "likelihoods": {"y": likelihoods} if not isinstance(likelihoods, tuple) else {"y": likelihoods[0], "z": likelihoods[1]}
         }
 
@@ -251,6 +246,3 @@ class ColorModel(CompressionModel):
         # Save aux_info
         with open(aux_path, "wb") as f:
             f.write(np.array(shape, dtype=np.int32).tobytes())
-
-
-                

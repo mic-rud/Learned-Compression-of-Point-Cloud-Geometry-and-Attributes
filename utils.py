@@ -150,6 +150,19 @@ def downsampled_coordinates(coordinates, factor, batched=False):
 
 
 def sort_tensor(sparse_tensor):
+    """
+    Sort the coordinates of a tensor
+
+    Parameters
+    ----------
+    sparse_tensor: ME.SparseTensor
+        Tensor containing the orignal coordinates
+
+    returns
+    -------
+    sparse_tensor: ME.SparseTensor
+        Tensor containing the sorted coordinates
+    """
     # Sort the coordinates
     weights = torch.tensor([1e15, 1e10, 1e5, 1], dtype=torch.int64, device=sparse_tensor.device) 
     sortable_vals = (sparse_tensor.C * weights).sum(dim=1)
@@ -166,6 +179,19 @@ def sort_tensor(sparse_tensor):
 
 
 def sort_points(points):
+    """
+    Sort the coordinates of torch list sized Nx4
+
+    Parameters
+    ----------
+    points: torch.tensor
+        Tensor containing the orignal coordinates Nx4
+
+    returns
+    -------
+    points: torch.tensor
+        Tensor containing the sorted coordinates Nx4
+    """
     # Sort the coordinates
     weights = torch.tensor([1e15, 1e10, 1e5, 1], dtype=torch.int64, device=points.device) 
     sortable_vals = (points * weights).sum(dim=1)
@@ -173,3 +199,4 @@ def sort_points(points):
 
     points = points[sorted_coords_indices]
     return points
+

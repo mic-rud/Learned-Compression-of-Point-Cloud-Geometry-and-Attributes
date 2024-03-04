@@ -1,24 +1,23 @@
 ## General
-experiment_name: "Scaled_test_5"
+experiment_name: "Debug"
 results_path : "./results"
 
 # Model
 model:
   entropy_model: 
-    type: "FactorizedPriorScaled" 
-    C_in: 128
-    C_bottleneck: 128
-    num_bottlenecks: 5
+    type: "MeanScaleHyperprior" 
+    C_bottleneck: 160
+    C_hyper_bottleneck: 128
   g_a: 
-    C_in: 3
+    C_in: 4
     N1: 64
     N2: 128
     N3: 128
   g_s:
-    C_out: 3
-    N1: 64
+    C_out: 4
+    N1: 128
     N2: 128
-    N3: 128
+    N3: 64
 
 ## Data
 data_path: "./data/datasets/full_128"
@@ -38,7 +37,7 @@ transforms:
       block_size: 128
 
 ## Training
-device: "2"
+device: "3"
 epochs: 100
 batch_size: 8
 virtual_batches: false
@@ -51,16 +50,19 @@ clip_grad_norm: 1.0
 
 ## Loss:
 loss:
-  ColorLoss:
-    type: "StackedColorLoss"
-    weight:
-      - 200
-      - 400
-      - 800
-      - 1600
-      - 3200
+  SSIM:
+    type: "ColorSSIM"
+    window_size: 5
+    weight: 1.0
     loss: "L2"
+  #L2:
+    #type: "ColorLoss"
+    #loss: "L2"
   bpp-y:
-    type: "StackedBPPLoss"
+    type: "BPPLoss"
     key: "y"
+    weight: 1.0
+  bpp-z:
+    type: "BPPLoss"
+    key: "z"
     weight: 1.0

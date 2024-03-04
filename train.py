@@ -17,6 +17,7 @@ from torchvision.transforms import Compose
 from data.dataloader import StaticDataset
 from data.transform import build_transforms
 from data.utils.util import custom_collate_fn
+from data.q_map import Q_Map
 
 from metrics.metric import PointCloudMetric
 
@@ -85,7 +86,7 @@ class Training():
         self.val_loader = DataLoader(valset,
                                      batch_size=1,                                       
                                      shuffle=False)
-            
+        self.q_map = Q_Map()
 
 
     def load_config(self, config_path):
@@ -117,8 +118,8 @@ class Training():
             self.train_epoch(epoch)
 
             if ((epoch)%10 == 0):
-                continue
-                self.val_epoch(epoch)
+                #self.val_epoch(epoch)
+                pass
 
             self.model_scheduler.step()
             self.model.update()
@@ -150,7 +151,8 @@ class Training():
                                     coordinates=coords,
                                     device=self.device)
             
-            output = self.model(input)
+            Q = self.q_map(input)
+            output = self.model(input, Q)
 
             # Backward for model
             loss_value, loss_dict = self.loss(input, output)
@@ -257,10 +259,6 @@ def parse_options():
 
 
 if __name__ == "__main__":
-    # Clean up for debugging
-    import shutil
-    #shutil.rmtree('./results/Ours_test')
-    
     args = parse_options()
     config = args.config
     run = Training(config)

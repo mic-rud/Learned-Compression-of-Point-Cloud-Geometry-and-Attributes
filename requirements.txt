@@ -1,5 +1,5 @@
-torch==2.0.1
-torchvision==0.15.2
+torch==2.0.1+cu117
+torchvision==0.15.2+cu117
 tqdm==4.65.0
 numpy==1.25.2
 scipy==1.11.1
