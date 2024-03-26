@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 import open3d as o3d 
+import pandas as pd
 import MinkowskiEngine as ME
 
 import torch
@@ -32,8 +33,8 @@ TQDM_BAR_FORMAT_VAL = "[Val]\t{l_bar}{bar:10}{r_bar}\t"
 os.environ["CUBLAS_WORKSPACE_CONFIG"]=":4096:8"
 torch.manual_seed(0)
 random.seed(0)
-torch.use_deterministic_algorithms(True)
 np.random.seed(0)
+torch.use_deterministic_algorithms(True)
 
 class Training():
     def __init__(self, config_path):
@@ -86,7 +87,13 @@ class Training():
         self.val_loader = DataLoader(valset,
                                      batch_size=1,                                       
                                      shuffle=False)
-        self.q_map = Q_Map()
+
+        self.q_map = Q_Map(self.config["q_map"])
+
+        self.results = []
+        self.epoch = 0
+
+        self.check_resume()
 
 
     def load_config(self, config_path):
@@ -110,24 +117,42 @@ class Training():
         config_path =  os.path.join(self.results_directory, "config.yaml")
         with open(config_path, "w") as config_file:
             yaml.safe_dump(self.config, config_file)
+
+        # Checkpoints
+        ckpts_dir = os.path.join(self.results_directory, "ckpts")
+        if not os.path.exists(ckpts_dir):
+            os.mkdir(ckpts_dir)
+
+
+
+    def check_resume(self):
+        path = os.path.join(self.results_directory, "ckpts")
+        ckpts = os.listdir(path)
+        ckpts.sort()
+
+        if len(ckpts) > 0:
+            ckpt_dir = os.path.join(self.results_directory, "ckpts", ckpts[-1])
+            self.load_checkpoint(ckpt_dir)
         
+
         
     def train(self):
-        for epoch in range(self.config["epochs"]):
+        for epoch in range(self.epoch, self.config["epochs"]):
             # Training
             self.train_epoch(epoch)
 
-            if ((epoch)%10 == 0):
-                #self.val_epoch(epoch)
-                pass
+            if ((epoch)%20 == 0):
+                self.val_epoch(epoch)
 
             self.model_scheduler.step()
             self.model.update()
+            self.save_checkpoint(epoch+1)
 
         # Save model after training
         path = os.path.join(self.results_directory,
                             "weights.pt")
-        self.save_checkpoint(path)
+        self.model.update()
+        torch.save(self.model.state_dict(), path)
 
     def train_epoch(self, epoch):
         self.model.train()
@@ -151,8 +176,8 @@ class Training():
                                     coordinates=coords,
                                     device=self.device)
             
-            Q = self.q_map(input)
-            output = self.model(input, Q)
+            Q, Lambda = self.q_map(input)
+            output = self.model(input, Q, Lambda)
 
             # Backward for model
             loss_value, loss_dict = self.loss(input, output)
@@ -199,52 +224,87 @@ class Training():
                 N = source.shape[0]
                 sequence = data["cubes"][0]["sequence"][0]
 
-                # Compression
-                strings, shapes = self.model.compress(source)
+                q_as = range(0, 2)
+                q_gs = range(0, 2)
+                for q_a in q_as:
+                    for q_g in q_gs:
+                        # Q Map
+                        Q_map = ME.SparseTensor(coordinates=torch.cat([torch.zeros((N, 1), device=self.device), points[0]], dim=1), 
+                                                features=torch.cat([torch.ones((N,1), device=self.device) * q_g, torch.ones((N,1), device=self.device) * q_a], dim=1),
+                                                device=source.device)
 
-                # Decompress all rates
-                y_strings = []
-                z_strings = []
-                for i in range(len(strings[0])):
-                    y_strings.append(strings[0][i])
-                    z_strings.append(strings[1][i])
-                    current_strings = [y_strings, z_strings]
+                        # Compression
+                        strings, shapes, k, coordinates = self.model.compress(source, Q_map)
 
-                    # Run decompression
-                    reconstruction = self.model.decompress(coordinates=coordinates, 
-                                                           strings=current_strings, 
-                                                           shape=shapes)
+                        # Run decompression
+                        reconstruction = self.model.decompress(coordinates=coordinates, 
+                                                                strings=strings, 
+                                                                shape=shapes,
+                                                                k=k)
                     
-                    # Compute bpp
-                    bpp = utils.count_bits(current_strings) / N
-                    print(bpp)
+                        # Rebuild point clouds
+                        source_pc = utils.get_o3d_pointcloud(source)
+                        rec_pc = utils.get_o3d_pointcloud(reconstruction)
 
-                    # Rebuild point clouds
-                    source_pc = utils.get_o3d_pointcloud(source)
-                    rec_pc = utils.get_o3d_pointcloud(reconstruction)
+                        # Compute metrics
+                        metric = PointCloudMetric(source_pc, rec_pc)
+                        results, error_vectors = metric.compute_pointcloud_metrics(drop_duplicates=True)
 
-                    # Compute metrics
-                    metric = PointCloudMetric(source_pc, rec_pc)
-                    results, _ = metric.compute_pointcloud_metrics(drop_duplicates=True)
-                    print(results["sym_y_psnr"])
+                        # Save results
+                        results["bpp"] = utils.count_bits(strings) / N
+                        results["sequence"] = data["cubes"][0]["sequence"][0]
+                        results["frameIdx"] = data["cubes"][0]["frameIdx"][0].item()
+                        results["q_a"] = q_a
+                        results["q_g"] = q_g
+                        self.results.append(results)
 
-                    # Renders
-                    path = os.path.join(self.results_directory, 
-                                        "renders_val", 
-                                        "{}_{}_{}_{}.png".format(str(epoch), sequence, str(i), "{}"))
-                    utils.render_pointcloud(rec_pc, path)
+                        # Renders of the pointcloud
+                        point_size = 1.0 if data["cubes"][0]["sequence"][0] in ["longdress", "soldier", "loot", "longdress"] else 2.0
+                        path = os.path.join(self.results_directory,
+                                            "renders_val", 
+                                            "{}_a{}_g{}_{}.png".format(sequence, str(q_a), str(q_g), "{}"))
+                        utils.render_pointcloud(rec_pc, path, point_size=point_size)
 
-    def save_checkpoint(self, path):
+        # Save the results as .csv
+        df = pd.DataFrame(self.results)
+        results_path = os.path.join(self.results_directory, "val.csv")
+        df.to_csv(results_path)
+
+    def save_checkpoint(self, epoch):
         """
         Save a checkpoint of the model
+        """
+        self.model.update()
+
+        checkpoint = {}
+        checkpoint["epoch"] = epoch
+        checkpoint["results"] = self.results
+        checkpoint["model"] = self.model.state_dict()
+        checkpoint["model_optimizer"] = self.model_optimizer.state_dict()
+        checkpoint["model_scheduler"] = self.model_scheduler.state_dict()
+        checkpoint["bottleneck_optimizer"] = self.bottleneck_optimizer.state_dict()
+
+        path = os.path.join(self.results_directory, "ckpts", "ckpt_{:03d}.pt".format(epoch))
+        torch.save(checkpoint, path)
+
+    def load_checkpoint(self, path):
+        """
+        Load a checkpoint of the model
         
         Parameters
         ----------
-        epoch: int
-            Current epoch
+        path: str
+            Path to load
         """
-        self.model.update()
-        torch.save(self.model.state_dict(), path)
+        checkpoint = torch.load(path)
+        self.epoch = checkpoint["epoch"]
+        self.results = checkpoint["results"]
+        self.model.load_state_dict(checkpoint["model"])
+        self.model_optimizer.load_state_dict(checkpoint["model_optimizer"])
+        self.model_scheduler.load_state_dict(checkpoint["model_scheduler"])
+        self.bottleneck_optimizer.load_state_dict(checkpoint["bottleneck_optimizer"])
+
+
 
 def parse_options():
     """

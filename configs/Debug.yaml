@@ -1,5 +1,5 @@
 ## General
-experiment_name: "Debug"
+experiment_name: "03_19_Debug_ColorsSSIM_jitter"
 results_path : "./results"
 
 # Model
@@ -7,57 +7,57 @@ model:
   entropy_model: 
     type: "MeanScaleHyperprior" 
     C_bottleneck: 160
-    C_hyper_bottleneck: 128
+    C_hyper_bottleneck: 160
   g_a: 
     C_in: 4
     N1: 64
     N2: 128
     N3: 128
   g_s:
-    C_out: 4
+    C_out: 3
     N1: 128
     N2: 128
     N3: 64
 
 ## Data
 data_path: "./data/datasets/full_128"
-min_points_train: 100
+min_points_train: 300
 min_points_test: 0
 transforms:
   train:
     1_Rotate:
       key: "RandomRotate"
       block_size: 128
-    2_Project:
-      key: "ProjectTexture"
-      block_size: 128
-      dataset_dir: ./data/datasets
-    3_Rotate:
-      key: "RandomRotate"
-      block_size: 128
+    2_ColorJitter:
+      key: "ColorJitter"
+
+#Q_Map
+q_map:
+  q_a: 25600
+  q_g: 800
 
 ## Training
-device: "3"
+device: "1"
 epochs: 100
-batch_size: 8
+batch_size: 16
 virtual_batches: false
 model_learning_rate: 0.0001
 bottleneck_learning_rate: 0.01
 optimizer: "Adam"
 scheduler_step_size: 30
 scheduler_gamma: 0.5
-clip_grad_norm: 1.0
+clip_grad_norm: 10.0
 
 ## Loss:
 loss:
-  SSIM:
+  Multiscale_FocalLoss:
+    type: "Multiscale_FocalLoss"
+    alpha: 0.8
+    gamma: 2.0
+  ColorSSIM:
     type: "ColorSSIM"
-    window_size: 5
-    weight: 1.0
-    loss: "L2"
-  #L2:
-    #type: "ColorLoss"
-    #loss: "L2"
+    yuv: True
+    window_size: 11
   bpp-y:
     type: "BPPLoss"
     key: "y"

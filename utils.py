@@ -1,7 +1,9 @@
 import os
 import open3d as o3d
 import torch
+import subprocess
 import MinkowskiEngine as ME 
+import numpy as np
 
 class AverageMeter(object):
     """
@@ -200,3 +202,91 @@ def sort_points(points):
     points = points[sorted_coords_indices]
     return points
 
+
+def pcqm(reference, distorted, pcqm_path, settings=None):
+    """
+    Compute PCQM with 
+
+    Parameters
+    ----------
+    reference: o3d.geometry.PointCloud | string
+        Reference Point Cloud or path to it
+    distorted: o3d.geometry.PointCloud
+        Distorted Point Cloud
+    pcqm_path: str
+        Path to the PCQM binary
+    settings: dictionary (default=None)
+        Extra Settings for PCQM
+
+    returns
+    -------
+    pcqm: float
+        PCQM value
+    """
+    cwd = os.getcwd()
+    pcqm_path = os.path.join(cwd, pcqm_path)
+    os.chdir(pcqm_path)
+
+    # Save reference if o3d
+    if isinstance(reference, o3d.geometry.PointCloud):
+        ref_path = os.path.join(pcqm_path, "ref.ply") 
+        save_ply(ref_path, reference)
+    else:
+        ref_path = os.path.join(cwd, reference)
+
+    # Save distorted
+    if isinstance(distorted, o3d.geometry.PointCloud):
+        distorted_path = os.path.join(pcqm_path, "distorted.ply") 
+        save_ply(distorted_path, distorted)
+    else:
+        distorted_path = os.path.join(cwd, distorted)
+
+    # Call PCQM
+    command = [pcqm_path + "/PCQM", ref_path, distorted_path, "-fq"]
+    print(command)
+    result = subprocess.run(command, stdout=subprocess.PIPE)
+
+    # read output
+    string = result.stdout
+    lines = string.decode().split('\n')
+    penultimate_line = lines[-3]  # Get the penultimate line
+    pcqm_value_str = penultimate_line.split(':')[-1].strip()  # Extract the value after ':'
+    pcqm_value = float(pcqm_value_str)  # Convert the value to float
+
+    os.chdir(cwd)
+    print(pcqm_value)
+
+    return pcqm_value
+
+def save_ply(path, ply):
+    o3d.io.write_point_cloud(path, ply, write_ascii=True)
+
+    with open(path, "r") as ply_file:
+        lines = ply_file.readlines()
+
+    header = []
+    for i, line in enumerate(lines):
+        header.append(line)
+        if line.strip() == "end_header":
+            break
+
+    # Update the property data type from double to float
+    new_header = []
+    for line in header:
+        if "property double" in line:
+            new_header.append(line.replace("double", "float"))
+    
+        else:
+            new_header.append(line)
+
+    # Convert the data values from double to float
+    data_lines = lines[i + 1:]
+    data = np.genfromtxt(data_lines, dtype=np.int32)
+    print(data.dtype)
+
+    # Save the modified PLY file
+    with open(path, "w") as ply_file:
+        for line in new_header:
+            ply_file.write(line)
+        for row in data:
+            ply_file.write(" ".join(map(str, row)) + "\n")

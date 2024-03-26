@@ -1,0 +1,67 @@
+## General
+experiment_name: "03_19_Debug_ColorsL2_52000"
+results_path : "./results"
+
+# Model
+model:
+  entropy_model: 
+    type: "MeanScaleHyperprior" 
+    C_bottleneck: 160
+    C_hyper_bottleneck: 160
+  g_a: 
+    C_in: 4
+    N1: 64
+    N2: 128
+    N3: 128
+  g_s:
+    C_out: 3
+    N1: 128
+    N2: 128
+    N3: 64
+
+## Data
+data_path: "./data/datasets/full_128"
+min_points_train: 300
+min_points_test: 0
+transforms:
+  train:
+    1_Rotate:
+      key: "RandomRotate"
+      block_size: 128
+    2_ColorJitter:
+      key: "ColorJitter"
+
+#Q_Map
+q_map:
+  q_a: 52000
+  q_g: 1000
+
+## Training
+device: "0"
+epochs: 100
+batch_size: 16
+virtual_batches: false
+model_learning_rate: 0.0001
+bottleneck_learning_rate: 0.01
+optimizer: "Adam"
+scheduler_step_size: 30
+scheduler_gamma: 0.5
+clip_grad_norm: 10.0
+
+## Loss:
+loss:
+  Multiscale_FocalLoss:
+    type: "Multiscale_FocalLoss"
+    alpha: 0.5
+    gamma: 2.0
+  ColorLoss:
+    type: "ColorLoss"
+    loss: "L2"
+  bpp-y:
+    type: "BPPLoss"
+    key: "y"
+    weight: 1.0
+  bpp-z:
+    type: "BPPLoss"
+    key: "z"
+    weight: 1.0

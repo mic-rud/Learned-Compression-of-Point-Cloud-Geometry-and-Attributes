@@ -46,42 +46,19 @@ class AnalysisTransform(nn.Module):
         self.post_conv = ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=3, stride=1, bias=True, dimension=3)
 
         # Conditions
-        self.q_pre_conv = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=2, out_channels=N1//4, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-        )
-        self.q_down_1 = ME.MinkowskiConvolution(in_channels=N1//4, out_channels=N2//4, kernel_size=3, stride=2, bias=True, dimension=3)
-        self.q_down_2 = ME.MinkowskiConvolution(in_channels=N2//4, out_channels=N3//4, kernel_size=3, stride=2, bias=True, dimension=3)
-        self.q_down_3 = ME.MinkowskiConvolution(in_channels=N3//4, out_channels=N3//4, kernel_size=3, stride=2, bias=True, dimension=3)
+        self.condition_encoder = ConditionEncoder(C_in = 2, 
+                                                  N_scales=[N2, N2, N3],
+                                                  N_features=[N1//4, N2//4, N3//4, N3//4])
 
-        self.q_layers_1 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N2//4, out_channels=N2//4, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-        )
-        self.q_layers_2 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N3//4, out_channels=N3//4, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-        )
-        self.q_layers_3 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N3//4, out_channels=N3//4, kernel_size=3, stride=1, bias=True, dimension=3),
-        )
+    def count_per_batch(self, x):
+        batch_indices = torch.unique(x.C[:, 0])  # Get unique batch IDs
+        k_per_batch = []
+        for batch_idx in batch_indices:
+            k = (x.C[:, 0] == batch_idx).sum().item()
+            k_per_batch.append(k)
+        return k_per_batch
         
-        self.q_predict_1 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N2//4, out_channels=N2, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-            ME.MinkowskiConvolution(in_channels=N2, out_channels=N2*2, kernel_size=3, stride=1, bias=True, dimension=3),
-        )
-        self.q_predict_2 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N3//4, out_channels=N3, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-            ME.MinkowskiConvolution(in_channels=N3, out_channels=N3*2, kernel_size=3, stride=1, bias=True, dimension=3),
-        )
-        self.q_predict_3 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N3//4, out_channels=N3, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-            ME.MinkowskiConvolution(in_channels=N3, out_channels=N3*2, kernel_size=3, stride=1, bias=True, dimension=3),
-        )
-
+        
 
     def forward(self, x, Q):
         """
@@ -97,42 +74,36 @@ class AnalysisTransform(nn.Module):
         x: ME.SparseTensor
             Sparse Tensor containing the latent features
         """
+        k = []
+        k.append(self.count_per_batch(x))
+        Q, beta_gammas = self.condition_encoder(Q)
+
         # Pre-Conv
         x = self.pre_conv(x)
-        Q = self.q_pre_conv(Q)
 
         # Layer 1
         x = self.down_1(x)
-        Q = self.q_down_1(Q)
-
-        Q = self.q_layers_1(Q)
-        beta_gamma = self.q_predict_1(Q)
-        x = self.scale_1(x, beta_gamma)
+        x = self.scale_1(x, beta_gammas[0])
+        k.append(self.count_per_batch(x))
 
         # Layer 2
         x = self.down_2(x)
-        Q = self.q_down_2(Q)
-
-        Q = self.q_layers_2(Q)
-        beta_gamma = self.q_predict_2(Q)
-        x = self.scale_2(x, beta_gamma)
+        x = self.scale_2(x, beta_gammas[1])
+        k.append(self.count_per_batch(x))
 
         # Layer 3
         x = self.down_3(x)
-        Q = self.q_down_3(Q)
-
-        Q = self.q_layers_3(Q)
-        beta_gamma = self.q_predict_3(Q)
-        x = self.scale_3(x, beta_gamma)
+        x = self.scale_3(x, beta_gammas[2])
 
         x = self.post_conv(x)
 
         # Concat quality and features for compression
-        x = ME.SparseTensor(coordinates=x.C,
-                            features=torch.cat([x.F, Q.features_at_coordinates(x.C.float())], dim=1),
+        Q = ME.SparseTensor(coordinates=x.C,
+                            features=Q.features_at_coordinates(x.C.float()),
                             tensor_stride=x.tensor_stride)
 
-        return x
+        k.reverse()
+        return x, Q, k
 
 
         
@@ -168,15 +139,26 @@ class SparseSynthesisTransform(torch.nn.Module):
             ME.MinkowskiReLU(inplace=False),
         )
 
-        self.up_1 = GenerativeUpBlock(N1, N1)
-        self.up_2 = GenerativeUpBlock(N1, N2)
-        self.up_3 = GenerativeUpBlock(N2, N3)
+        self.up_1 = GenerativeUpBlock(N1, N1, predict=True)
+        self.up_2 = GenerativeUpBlock(N1, N2, predict=True)
+        self.up_3 = GenerativeUpBlock(N2, N3, predict=True)
 
         self.scale_1 = ScaledBlock(N1, encode=False)
         self.scale_2 = ScaledBlock(N1, encode=False)
         self.scale_3 = ScaledBlock(N2, encode=False)
 
-        self.post_conv = ME.MinkowskiConvolution(in_channels=N3, out_channels=C_out, kernel_size=3, stride=1, bias=True, dimension=3)
+        self.post_conv = nn.Sequential(
+            ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiReLU(inplace=False),
+            #ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=1, stride=1, bias=True, dimension=3),
+            #ME.MinkowskiReLU(inplace=False),
+            #ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=1, stride=1, bias=True, dimension=3),
+            #ME.MinkowskiReLU(inplace=False),
+            #ME.MinkowskiConvolution(in_channels=N3, out_channels=C_out, kernel_size=1, stride=1, bias=True, dimension=3)
+            ME.MinkowskiConvolution(in_channels=N3, out_channels=N3//2, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiReLU(inplace=False),
+            ME.MinkowskiConvolution(in_channels=N3//2, out_channels=C_out, kernel_size=3, stride=1, bias=True, dimension=3),
+        )
 
         # Condition
         self.q_pre_conv = nn.Sequential(
@@ -222,7 +204,7 @@ class SparseSynthesisTransform(torch.nn.Module):
 
 
 
-    def forward(self, y, coords=None):
+    def forward(self, x, Q, coords=None, k=None):
         """
         Forward pass for the synthesis transform
 
@@ -238,15 +220,6 @@ class SparseSynthesisTransform(torch.nn.Module):
         x: ME.SparseTensor
             Sparse Tensor containing the upsampled features at location of coords
         """
-        # Compute downsampled coordinates for pruning
-        with torch.no_grad():
-            points_1 = self.down_conv(coords)
-            points_2 = self.down_conv(points_1)
-
-        # Split coords after entropy coding
-        Q = ME.SparseTensor(coordinates=y.C, features=y.F[:, 128:], device=y.device, tensor_stride=8)
-        x = ME.SparseTensor(coordinates=y.C, features=y.F[:, :128], device=y.device, tensor_stride=8)
-
         # Pre-Conv
         x = self.pre_conv(x)
         Q = self.q_pre_conv(Q)
@@ -256,27 +229,36 @@ class SparseSynthesisTransform(torch.nn.Module):
         beta_gamma = self.q_predict_1(Q)
         x = self.scale_1(x, beta_gamma)
 
-        Q = self.q_up_1(Q, points_2)
-        x = self.up_1(x, points_2)
+        x, predict_2, up_coords = self.up_1(x, k=k[0])
+        Q = self.q_up_1(Q, up_coords)
 
         # Layer 2
         Q = self.q_layers_2(Q)
         beta_gamma = self.q_predict_2(Q)
         x = self.scale_2(x, beta_gamma)
 
-        Q = self.q_up_2(Q, points_1)
-        x = self.up_2(x, points_1)
+        x, predict_1, up_coords = self.up_2(x, k=k[1])
+        Q = self.q_up_2(Q, up_coords)
 
         # Layer 3
         Q = self.q_layers_3(Q)
         beta_gamma = self.q_predict_3(Q)
         x = self.scale_3(x, beta_gamma)
 
-        Q = self.q_up_3(Q, coords)
-        x = self.up_3(x, coords)
+        x, predict_final, up_coords = self.up_3(x, k=k[2])
+        Q = self.q_up_3(Q, up_coords)
 
         # Post Conv
         x = self.post_conv(x)
 
-        return x
+        if coords is not None:
+            predictions = [predict_2, predict_1, predict_final]
+            with torch.no_grad():
+                points_1 = self.down_conv(coords)
+                points_2 = self.down_conv(points_1)
+            points = [points_2, points_1, coords]
+            return x, points, predictions
+
+        else:
+            return x
 

@@ -1,6 +1,8 @@
 import torch
+import torch.nn.functional as F
 import math
 import MinkowskiEngine as ME
+
 
 class Loss():
     """
@@ -27,6 +29,10 @@ class Loss():
                     self.losses[id] = ColorLoss(setting)
                 case "ColorSSIM":
                     self.losses[id] = ColorSSIM(setting)
+                case "FocalLoss":
+                    self.losses[id] = FocalLoss(setting)
+                case "Multiscale_FocalLoss":
+                    self.losses[id] = Multiscale_FocalLoss(setting)
                 case _:
                     print("Not found {}".format(key))
                 
@@ -70,12 +76,11 @@ class BPPLoss():
     def __call__(self, gt, pred):
         loss = 0.0
         likelihoods = pred["likelihoods"][self.key]
-        if isinstance(likelihoods, list):
-            likelihoods = torch.cat(likelihoods, dim=-1)
         num_points = gt.C.shape[0]
 
-        bits = torch.log(likelihoods).sum() / (- math.log(2) * num_points)
-        loss += bits
+        for likelihood in likelihoods:
+            bits = torch.log(likelihood).sum() / (- math.log(2) * num_points)
+            loss += bits
 
         return loss.mean() * self.weight
     
@@ -95,7 +100,7 @@ class ColorLoss():
         prediction = pred["prediction"]
         q_map = pred["q_map"]
 
-        pred_colors = prediction.features_at_coordinates(gt.C.float())[:, 1:]
+        pred_colors = prediction.features_at_coordinates(gt.C.float())
         gt_colors = gt.F
 
         color_loss = self.loss_func(gt_colors, pred_colors) 
@@ -104,13 +109,12 @@ class ColorLoss():
         return color_loss.mean()
     
 
-class ME_FocalLoss():
+class FocalLoss():
     """
     Focal Loss for predicted voxels
     for gamma = 0, this is BCE
     """
     def __init__(self, config):
-        self.weight = config["weight"]
         self.identifier = config["id"]
         self.alpha = config["alpha"]
         self.gamma = config["gamma"]
@@ -140,18 +144,69 @@ class ME_FocalLoss():
 
         return focal_loss * pred["lambdas"][0][0]
 
+class Multiscale_FocalLoss():
+    """
+    Focal Loss for predicted voxels
+    for gamma = 0, this is BCE
+    """
+    def __init__(self, config):
+        self.identifier = config["id"]
+        self.alpha = config["alpha"]
+        self.gamma = config["gamma"]
+        self.pooling = ME.MinkowskiAvgPooling(kernel_size=3, stride=1, dimension=3)
+        self.down_pooling = ME.MinkowskiAvgPooling(kernel_size=3, stride=2, dimension=3)
+
+    def __call__(self, gt, pred):
+        predictions = pred["occ_predictions"]
+        points = pred["points"]
+        predictions.reverse()
+        points.reverse()
+
+        q_map = pred["q_map"]
+
+
+        loss = 0.0
+        for prediction, coords in zip(predictions, points):
+            # Convert 3D coordinates to a flattened representation
+            scaling_factors = torch.tensor([1, 1e4, 1e9, 1e14], dtype=torch.int64, device=gt.C.device)
+            gt_flat = (coords.C.to(torch.int64) * scaling_factors).sum(dim=1)
+            pred_flat = (prediction.C.to(torch.int64) * scaling_factors).sum(dim=1)
+
+            # Identify non-overlapping coordinates
+            overlapping_mask = torch.isin(pred_flat, gt_flat)
+        
+            # Classificaton
+            p_z = F.sigmoid(prediction.F[:, 0]) # F[0] contains occupancy
+        
+            # Build pt_z and alpha_z
+            pt_z = torch.where(overlapping_mask, p_z, 1 - p_z)
+            alpha_z = torch.where(overlapping_mask, self.alpha, 1 - self.alpha)
+            pt_z = torch.clip(pt_z, 1e-2, 1)
+
+            # Focal Loss
+            focal_loss = - alpha_z * (1-pt_z)**self.gamma * torch.log(pt_z)
+            
+            # Q Map
+            q_avgs = self.pooling(q_map, coordinates=prediction.C)
+            q_map = self.down_pooling(q_map)
+
+            loss += (focal_loss * q_avgs.features_at_coordinates(prediction.C.float())[:, 0]).mean()
+
+        return loss
+
 class ColorSSIM():
     def __init__(self, config):
         self.identifier = config["id"]
         self.window_size = config["window_size"]
+        self.yuv = config["yuv"]
         self.window = self.create_window_3D(self.window_size)
 
         self.conv_sum = ME.MinkowskiChannelwiseConvolution(in_channels=30, kernel_size=self.window_size, stride=1, dimension=3)
         self.conv_sum.kernel = torch.nn.Parameter(self.window)
         self.conv_sum.kernel.requires_grad = False
 
-        self.C1 = 0.01**2
-        self.C2 = 0.03**2
+        self.C1 = (0.01)**2
+        self.C2 = (0.03)**2
         self.C3 = self.C2 / 2
 
 
@@ -194,11 +249,13 @@ class ColorSSIM():
         _2D_window = _1D_window.mm(_1D_window.t())
         _3D_window = _1D_window.mm(_2D_window.reshape(1, -1)).reshape(window_size, window_size, window_size).float().unsqueeze(0).unsqueeze(0)
         window = _3D_window.view(-1, 1)
+        #window = torch.ones_like(window)
         return window
 
     def rgb_to_yuv(self, rgb_tensor):
         """
         Convert a rgb_tensor to RGB (move to utils?)
+        BT.709
 
         Parameters
         ----------
@@ -219,8 +276,6 @@ class ColorSSIM():
 
         # Matrix multiplication
         yuv_reshaped = torch.einsum('ij,nj->ni', color_matrix, rgb_tensor)
-
-        # Shift U and V if required
         yuv_reshaped[:, 1] += 0.5
         yuv_reshaped[:, 2] += 0.5
 
@@ -234,11 +289,24 @@ class ColorSSIM():
         prediction = pred["prediction"]
         q_map = pred["q_map"]
 
-        predicted_colors = self.mask_topk_prediction(gt, prediction)
-        predicted_colors = ME.SparseTensor(coordinates=predicted_colors.C, features=torch.clamp(predicted_colors.F, 0, 1))
-        #gt = ME.SparseTensor(coordinates=gt.C, features=self.rgb_to_yuv(gt.F))
+        #predicted_colors = self.mask_topk_prediction(gt, prediction)
+        predicted_colors = ME.SparseTensor(coordinates=prediction.C, features=prediction.F)
+        #predicted_colors = ME.SparseTensor(coordinates=predicted_colors.C, features=predicted_colors.F)
+        if self.yuv:
+            gt = ME.SparseTensor(coordinates=gt.C, features=self.rgb_to_yuv(gt.F))
+            predicted_colors = ME.SparseTensor(coordinates=predicted_colors.C, features=self.rgb_to_yuv(predicted_colors.F))
+
+        # Convert 3D coordinates to a flattened representation
+        scaling_factors = torch.tensor([1, 1e4, 1e9, 1e14], dtype=torch.int64, device=gt.C.device)
+        gt_flat = (gt.C.to(torch.int64) * scaling_factors).sum(dim=1)
+        pred_flat = (prediction.C.to(torch.int64) * scaling_factors).sum(dim=1)
+
+        # Identify non-overlapping coordinates
+        #overlapping_mask = torch.isin(pred_flat, gt_flat)
+        #union_coordinates = prediction.C[overlapping_mask]
 
         union_coordinates = torch.unique(torch.cat([gt.C, prediction.C], 0), dim=0)
+
         result = self.convolutions(gt, predicted_colors, union_coordinates)
 
         # Correction factors
@@ -288,8 +356,7 @@ class ColorSSIM():
 
         # SSIM
         ssim = luminance * structure * lightness
-        print(ssim.mean())
-        ssim = (((1 - ssim) / 2)).T * q_map.features_at_coordinates(union_coordinates.float())[:, 1]
+        ssim = (((1 - ssim) / 2)) * q_map.features_at_coordinates(union_coordinates.float())[:, 1].unsqueeze(1)
 
         return ssim.mean() 
 
@@ -314,7 +381,7 @@ class ColorSSIM():
             indices_for_current_batch = torch.nonzero(current_batch_mask).squeeze()
             pred_occupancy_mask[indices_for_current_batch[top_indices]] = True
 
-        predicted_colors = ME.SparseTensor(coordinates=prediction.C[pred_occupancy_mask], features=prediction.F[pred_occupancy_mask, 1:4])
+        predicted_colors = ME.SparseTensor(coordinates=prediction.C[pred_occupancy_mask], features=prediction.F[pred_occupancy_mask])
 
         return predicted_colors
 
@@ -326,6 +393,8 @@ class ColorSSIM():
         # Compute occupancies
         gt_occupancy = ME.SparseTensor(coordinates=gt.C, features=torch.ones(gt.C.shape[0], device=gt.F.device).unsqueeze(1))
         pred_occupancy = ME.SparseTensor(coordinates=prediction.C, features=torch.ones(prediction.C.shape[0], device=gt.F.device).unsqueeze(1))
+        #gt_occupancy = ME.SparseTensor(coordinates=union_coordinates, features=torch.ones(union_coordinates.shape[0], device=gt.F.device).unsqueeze(1))
+        #pred_occupancy = ME.SparseTensor(coordinates=union_coordinates, features=torch.ones(union_coordinates.shape[0], device=gt.F.device).unsqueeze(1))
 
         gt_occupancy = ME.SparseTensor(coordinates=union_coordinates, features=gt_occupancy.features_at_coordinates(union_coordinates.float()))
         pred_occupancy = ME.SparseTensor(coordinates=union_coordinates, features=pred_occupancy.features_at_coordinates(union_coordinates.float()))

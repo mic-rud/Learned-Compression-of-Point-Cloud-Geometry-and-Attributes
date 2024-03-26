@@ -1,0 +1,76 @@
+## General
+experiment_name: "03_21_Debug_ColorsL2_2models_res_proj"
+results_path : "./results"
+
+# Model
+model:
+  entropy_model: 
+    type: "MeanScaleHyperprior" 
+    C_bottleneck: 128
+    C_hyper_bottleneck: 128
+  entropy_model_map: 
+    type: "MeanScaleHyperprior" 
+    C_bottleneck: 32
+    C_hyper_bottleneck: 32
+  g_a: 
+    C_in: 4
+    N1: 64
+    N2: 128
+    N3: 128
+  g_s:
+    C_out: 3
+    N1: 128
+    N2: 128
+    N3: 64
+
+## Data
+data_path: "./data/datasets/full_128"
+min_points_train: 300
+min_points_test: 0
+transforms:
+  train:
+    1_ColorJitter:
+      key: "ColorJitter"
+    2_Project:
+      key: "ProjectTexture"
+      block_size: 128
+      dataset_dir: ./data/datasets
+      probability: 0.5
+    4_Rotate:
+      key: "RandomRotate"
+      block_size: 128
+
+#Q_Map
+q_map:
+  q_a: 25600
+  q_g: 400
+
+## Training
+device: "1"
+epochs: 400
+batch_size: 8
+virtual_batches: false
+model_learning_rate: 0.0001
+bottleneck_learning_rate: 0.001
+optimizer: "Adam"
+scheduler_step_size: 150
+scheduler_gamma: 0.5
+clip_grad_norm: 1.0
+
+## Loss:
+loss:
+  Multiscale_FocalLoss:
+    type: "Multiscale_FocalLoss"
+    alpha: 0.5
+    gamma: 2.0
+  ColorLoss:
+    type: "ColorLoss"
+    loss: "L2"
+  bpp-y:
+    type: "BPPLoss"
+    key: "y"
+    weight: 1.0
+  bpp-z:
+    type: "BPPLoss"
+    key: "z"
+    weight: 1.0

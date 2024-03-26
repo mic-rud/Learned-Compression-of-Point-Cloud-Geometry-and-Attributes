@@ -30,4 +30,10 @@
 
     make -j$(nproc)
     make install-pip-package
+
+    # PCQM
+    git clone https://github.com/MEPP-team/PCQM.git
+    mkdir PCQM/build && cd PCQM/build
+    cmake ..
+    make
 ```

@@ -15,6 +15,10 @@ class ColorModel(CompressionModel):
         self.g_s = SparseSynthesisTransform(config["g_s"])
 
         self.entropy_model = MeanScaleHyperprior(config["entropy_model"])
+        if "entropy_model_map" in config.keys():
+            self.entropy_model_map = MeanScaleHyperprior(config["entropy_model_map"])
+        else:
+            self.entropy_model_map = None
 
 
     def update(self):
@@ -22,6 +26,8 @@ class ColorModel(CompressionModel):
         Update the scale tables of entropy models
         """
         self.entropy_model.update(force=True)
+        if self.entropy_model_map is not None:
+            self.entropy_model_map.update(force=True)
 
 
 
@@ -29,11 +35,14 @@ class ColorModel(CompressionModel):
         """
         Get the aux loss of the entropy model
         """
-        return self.entropy_model.aux_loss()
+        if self.entropy_model_map is None:
+            return self.entropy_model.aux_loss()
+        else:
+            return self.entropy_model.aux_loss() + self.entropy_model_map.aux_loss()
     
 
 
-    def forward(self, x, Q):
+    def forward(self, x, Q, Lambda):
         """
         Parameters
         ----------
@@ -50,24 +59,39 @@ class ColorModel(CompressionModel):
                             features=torch.cat([torch.ones((x.C.shape[0], 1), device=x.device), x.F], dim=1))
 
         # Analysis Transform
-        y = self.g_a(x, Q)
+        y, Q, k = self.g_a(x, Q)
 
         # Entropy Bottleneck
-        y_hat, likelihoods = self.entropy_model(y)
+        if not self.entropy_model_map:
+            y = ME.SparseTensor(coordinates=y.c,
+                                features=torch.cat[y.F, Q.features_at_coordinates(y.C.float(), dim=1)],
+                                tensor_stride=y.tensor_stride)
+            y_hat, likelihoods = self.entropy_model(y)
+            # Split coords after entropy coding
+            Q_hat = ME.SparseTensor(coordinates=y_hat.C, features=y_hat.F[:, 128:], device=y.device, tensor_stride=8)
+            y_hat = ME.SparseTensor(coordinates=y_hat.C, features=y_hat.F[:, :128], device=y.device, tensor_stride=8)
+            likelihoods = {"y": likelihoods[0], "z": likelihoods[1]}
+        else:
+            y_hat, y_likelihoods = self.entropy_model(y)
+            Q_hat, Q_likelihoods = self.entropy_model_map(Q)
+            likelihoods = {"y": [y_likelihoods[0], Q_likelihoods[0]], "z" : [y_likelihoods[1], Q_likelihoods[1]]}
+
 
         # Synthesis Transform(s)
-        x_hat = self.g_s(y_hat, coords=coords)
+        x_hat, points, predictions = self.g_s(y_hat, Q_hat, coords=coords, k=k)
         
         # Building Output dictionaries
         output = {
             "prediction": x_hat,
-            "q_map": Q,
-            "likelihoods": {"y": likelihoods} if not isinstance(likelihoods, tuple) else {"y": likelihoods[0], "z": likelihoods[1]}
+            "points": points,
+            "occ_predictions": predictions,
+            "q_map": Lambda,
+            "likelihoods": likelihoods
         }
 
         return output
 
-    def compress(self, x, path=None, latent_path=None):
+    def compress(self, x, Q, path=None, latent_path=None):
         """
         Compress a point cloud
         
@@ -95,22 +119,35 @@ class ColorModel(CompressionModel):
 
         # Minkowski Tensor
         input = ME.SparseTensor(coordinates=points.int(),
-                                features=colors)
+                                features=torch.cat([torch.ones((N, 1), device=x.device), colors], dim=1))
 
         # Analysis Transform
-        y = self.g_a(input)
+        y, Q, k = self.g_a(input, Q)
         
-        # Entropy Coding
-        strings, shape = self.entropy_model.compress(y, latent_path=latent_path)
+        # Entropy Bottleneck
+        if not self.entropy_model_map:
+            y = ME.SparseTensor(coordinates=y.C,
+                                features=torch.cat([y.F, Q.features_at_coordinates(y.C.float())], dim=1),
+                                tensor_stride=y.tensor_stride)
+            points, strings, shape = self.entropy_model.compress(y)
+            # Split coords after entropy coding
+        else:
+            points, y_strings, y_shape = self.entropy_model.compress(y)
+            _, Q_strings, Q_shape = self.entropy_model_map.compress(Q)
+            strings = [y_strings, Q_strings]
+            shape = [y_shape, Q_shape]
+
+        coordinates = y.C
 
         # Save the bitstream of return data
         if path:
+            print("Not implemented in model.py")
             self.save_bitstream(path=path,
                                 points=points, 
                                 strings=strings, 
                                 shape=shape)
         else:
-            return strings, shape
+            return strings, shape, k, coordinates
 
 
 
@@ -119,7 +156,8 @@ class ColorModel(CompressionModel):
                    path=None, 
                    coordinates=None, 
                    strings=None, 
-                   shape=None):
+                   shape=None,
+                   k=None):
         """
         Decompress a point cloud bitstream
         
@@ -133,43 +171,38 @@ class ColorModel(CompressionModel):
             List of strings (bitstreams), only returned if path=None
         shape: list
             List of shapes, only returned if path=None
+        k: list
+            Number of points at each stage
         
         returns
         -------
         x_hat: torch.tensor, Nx6
             Decompressed and reconstructed point cloud
         """
-        N = coordinates.shape[0]
-
         # Decode the bitstream
         if path:
             strings, shape = self.load_bitstream(path)
 
         # Prepare the coordinates
-        batch_vec = torch.zeros((N, 1), 
-                                device=coordinates.device)
-        coordinates = torch.cat([batch_vec, coordinates[:, :3].int()], 
-                                dim=1)
-        mock_features = torch.ones((coordinates.shape[0], 1), 
-                                   device=coordinates.device)
-
-        coordinates = ME.SparseTensor(coordinates=coordinates,
-                                      features=mock_features)
-    
-        #latent_coordinates = utils.downsampled_coordinates(coordinates.C.clone(), factor=8)
-        latent_coordinates = self.g_s.down_conv(coordinates)
-        latent_coordinates = self.g_s.down_conv(latent_coordinates)
-        latent_coordinates = self.g_s.down_conv(latent_coordinates)
-        latent_coordinates_2 = ME.SparseTensor(coordinates=latent_coordinates.C.clone(), features=latent_coordinates.F.clone(), tensor_stride=8, device=coordinates.device)
+        latent_coordinates_2 = ME.SparseTensor(coordinates=coordinates.clone(), features=torch.ones((coordinates.shape[0], 1)), tensor_stride=8, device=coordinates.device)
         latent_coordinates_2 = self.g_s.down_conv(latent_coordinates_2)
         latent_coordinates_2 = self.g_s.down_conv(latent_coordinates_2)
-        points = [latent_coordinates.C, latent_coordinates_2.C]
+        points = [coordinates, latent_coordinates_2.C]
 
         # Entropy Decoding
-        y_hat = self.entropy_model.decompress(points, strings, shape)
+        if not self.entropy_model_map:
+            y_hat = self.entropy_model.decompress(points, strings, shape)
+            # Split coords after entropy coding
+            Q_hat = ME.SparseTensor(coordinates=y_hat.C, features=y_hat.F[:, 128:], device=coordinates.device, tensor_stride=8)
+            y_hat = ME.SparseTensor(coordinates=y_hat.C, features=y_hat.F[:, :128], device=coordinates.device, tensor_stride=8)
+        else:
+            y_strings, Q_strings = strings[0], strings[1]
+            y_shape, Q_shape = shape[0], shape[1]
+            y_hat = self.entropy_model.decompress(points, y_strings, y_shape)
+            Q_hat = self.entropy_model_map.decompress(points, Q_strings, Q_shape)
 
         # Synthesis transform
-        x_hat = self.g_s(y_hat, coords=coordinates)
+        x_hat = self.g_s(y_hat, Q_hat, k=k)
 
         # Rebuild reconstruction to torch tensor
         features = torch.clamp(torch.round(x_hat.F * 255), 0.0, 255.0) / 255
