@@ -314,9 +314,9 @@ class ColorSSIM():
         N_y_inv = torch.where(result["N_y"] > 0.0, 1 / result["N_y"], 0)# 1e-10)
         N_xy_inv = torch.where(result["N_xy"] > 0.0, 1 / result["N_xy"],0)# 1e-10)
 
-        N_x_inv_corr = torch.where(result["N_x"] > 1.0, 1 / (result["N_x"] - 1), 0.0)
-        N_y_inv_corr = torch.where(result["N_y"] > 1.0, 1 / (result["N_y"] - 1), 0.0)
-        N_xy_inv_corr = torch.where(result["N_xy"] > 1.0, 1 / (result["N_xy"] - 1), 0.0)
+        #N_x_inv_corr = torch.where(result["N_x"] > 1.0, 1 / (result["N_x"] - 1), 0.0)
+        #N_y_inv_corr = torch.where(result["N_y"] > 1.0, 1 / (result["N_y"] - 1), 0.0)
+        #N_xy_inv_corr = torch.where(result["N_xy"] > 1.0, 1 / (result["N_xy"] - 1), 0.0)
 
         # Compute means
         mu_x = N_x_inv * result["sum_x"]
@@ -357,6 +357,8 @@ class ColorSSIM():
         # SSIM
         ssim = luminance * structure * lightness
         ssim = (((1 - ssim) / 2)) * q_map.features_at_coordinates(union_coordinates.float())[:, 1].unsqueeze(1)
+        if self.yuv:
+            ssim *= torch.tensor([[0.75, 0.125, 0.125]], device=ssim.device)
 
         return ssim.mean() 
 

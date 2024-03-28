@@ -55,8 +55,13 @@ class Training():
         model_parameters = [p for n,p in self.model.named_parameters() if not n.endswith(".quantiles")]
         bottleneck_parameters = [p for n,p in self.model.named_parameters() if n.endswith(".quantiles")]
 
-        self.model_optimizer = optim.Adam(model_parameters, 
-                                          lr=self.config["model_learning_rate"])
+        if self.config["optimizer"] == "Adam":
+            self.model_optimizer = optim.Adam(model_parameters, 
+                                            lr=self.config["model_learning_rate"])
+        elif self.config["optimizer"] == "SGD":
+            self.model_optimizer = optim.SGD(model_parameters, 
+                                            lr=self.config["model_learning_rate"],
+                                            momentum=0.9)
         self.bottleneck_optimizer = optim.Adam(bottleneck_parameters,
                                                 lr=self.config["bottleneck_learning_rate"])
 
@@ -141,7 +146,7 @@ class Training():
             # Training
             self.train_epoch(epoch)
 
-            if ((epoch)%20 == 0):
+            if ((epoch + 1)%9 == 0):
                 self.val_epoch(epoch)
 
             self.model_scheduler.step()

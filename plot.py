@@ -17,11 +17,13 @@ related_work = ["YOGA"]
 
 runs = {
     "03_19_ColorSSIM" : "03_19_Debug_ColorsSSIM_jitter",
-    "03_20_ColorL2" : "03_18_Debug_ColorsL2_25600",
-    "03_20_ColorL2-2_Models" : "03_20_Debug_ColorsL2_2models",
-    "03_20_ColorL2-2_Models_60k" : "03_20_Debug_ColorsL2_2models_60k",
-    "03_20_ColorL2-2_Models_noact" : "03_20_Debug_ColorsL2_2models_scale_noact",
+    #"03_20_ColorL2" : "03_18_Debug_ColorsL2_25600",
+    #"03_20_ColorL2-2_Models" : "03_20_Debug_ColorsL2_2models",
+    #"03_20_ColorL2-2_Models_60k" : "03_20_Debug_ColorsL2_2models_60k",
+    #"03_20_ColorL2-2_Models_noact" : "03_20_Debug_ColorsL2_2models_scale_noact",
     "03_21_ColorL2-2_Models_res" : "03_21_Debug_ColorsL2_2models_res_proj",
+    "03_26_ColorL2-128" : "03_26_Debug_ColorsL2_2models_res_proj_128",
+    "03_26_ColorSSIM-128" : "03_25_Debug_ColorsSSIM_2models_res_proj",
     "YOGA" : "YOGA",
 }
 
@@ -97,6 +99,8 @@ def plot_settings(dataframe, pareto_dataframe, key):
             ax.set_zlabel(metric)
             if metric in y_lims.keys():
                 ax.set_zlim(y_lims[metric][0], y_lims[metric][1])
+                ax.set_ylim(0, 1)
+                ax.set_xlim(0, 1)
 
 
             ax = fig.add_subplot(122)
@@ -105,7 +109,8 @@ def plot_settings(dataframe, pareto_dataframe, key):
             ax.set_xlabel("q_a")
             ax.set_ylabel("q_g")
             if metric in y_lims.keys():
-                ax.set_ylim(y_lims[metric][0], y_lims[metric][1])
+                ax.set_ylim(0, 1)
+                ax.set_xlim(0, 1)
 
 
             fig.tight_layout()
@@ -127,6 +132,7 @@ def plot_pareto_figs_single(dataframe, key):
             ax.plot(bpp, y)
             ax.set_xlabel("bpp")
             ax.set_ylabel(metric)
+            ax.grid()
             if metric in y_lims.keys():
                 ax.set_ylim(y_lims[metric][0], y_lims[metric][1])
 

@@ -46,7 +46,9 @@ experiments = [
     #"03_20_Debug_ColorsL2_2models",
     #"03_20_Debug_ColorsL2_2models_scale_noact"
     #"03_21_Debug_ColorsL2_2models_res_proj"
-    "03_25_Debug_ColorsL2_2models_res_proj_256"
+    #"03_25_Debug_ColorsL2_2models_res_proj_256"
+    #"03_26_Debug_ColorsL2_2models_res_proj_128"
+    "03_25_Debug_ColorsSSIM_2models_res_proj"
     ]
 
 def run_testset(experiments):

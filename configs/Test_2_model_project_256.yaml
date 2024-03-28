@@ -1,5 +1,5 @@
 ## General
-experiment_name: "03_25_Debug_ColorsL2_2models_res_proj_256"
+experiment_name: "03_26_Debug_ColorsL2_2models_res_proj_256"
 results_path : "./results"
 
 # Model
@@ -42,14 +42,14 @@ transforms:
 
 #Q_Map
 q_map:
-  lambda_A_min: 200
+  lambda_A_min: 0
   lambda_A_max: 3200
-  lambda_G_min: 50
-  lambda_G_max: 400
+  lambda_G_min: 0
+  lambda_G_max: 200
 
 ## Training
 device: "0"
-epochs: 120
+epochs: 140
 batch_size: 4
 virtual_batches: false
 model_learning_rate: 0.0001

@@ -42,10 +42,10 @@ transforms:
 
 #Q_Map
 q_map:
-  lambda_A_min: 50
-  lambda_A_max: 3200
-  lambda_G_min: 50
-  lambda_G_max: 400
+  lambda_A_min: 0
+  lambda_A_max: 800
+  lambda_G_min: 0
+  lambda_G_max: 200
 
 
 ## Training

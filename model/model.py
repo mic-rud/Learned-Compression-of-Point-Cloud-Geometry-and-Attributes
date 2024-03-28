@@ -14,10 +14,11 @@ class ColorModel(CompressionModel):
         self.g_a = AnalysisTransform(config["g_a"])
         self.g_s = SparseSynthesisTransform(config["g_s"])
 
-        self.entropy_model = MeanScaleHyperprior(config["entropy_model"])
         if "entropy_model_map" in config.keys():
+            self.entropy_model = MeanScaleHyperprior(config["entropy_model"])
             self.entropy_model_map = MeanScaleHyperprior(config["entropy_model_map"])
         else:
+            self.entropy_model = MeanScaleHyperprior_Map(config["entropy_model"])
             self.entropy_model_map = None
 
 
@@ -62,14 +63,9 @@ class ColorModel(CompressionModel):
         y, Q, k = self.g_a(x, Q)
 
         # Entropy Bottleneck
-        if not self.entropy_model_map:
-            y = ME.SparseTensor(coordinates=y.c,
-                                features=torch.cat[y.F, Q.features_at_coordinates(y.C.float(), dim=1)],
-                                tensor_stride=y.tensor_stride)
-            y_hat, likelihoods = self.entropy_model(y)
+        if isinstance(self.entropy_model, MeanScaleHyperprior_Map):
+            y_hat, Q_hat, likelihoods = self.entropy_model(y)
             # Split coords after entropy coding
-            Q_hat = ME.SparseTensor(coordinates=y_hat.C, features=y_hat.F[:, 128:], device=y.device, tensor_stride=8)
-            y_hat = ME.SparseTensor(coordinates=y_hat.C, features=y_hat.F[:, :128], device=y.device, tensor_stride=8)
             likelihoods = {"y": likelihoods[0], "z": likelihoods[1]}
         else:
             y_hat, y_likelihoods = self.entropy_model(y)
@@ -125,12 +121,8 @@ class ColorModel(CompressionModel):
         y, Q, k = self.g_a(input, Q)
         
         # Entropy Bottleneck
-        if not self.entropy_model_map:
-            y = ME.SparseTensor(coordinates=y.C,
-                                features=torch.cat([y.F, Q.features_at_coordinates(y.C.float())], dim=1),
-                                tensor_stride=y.tensor_stride)
+        if isinstance(self.entropy_model, MeanScaleHyperprior_Map):
             points, strings, shape = self.entropy_model.compress(y)
-            # Split coords after entropy coding
         else:
             points, y_strings, y_shape = self.entropy_model.compress(y)
             _, Q_strings, Q_shape = self.entropy_model_map.compress(Q)
@@ -190,11 +182,8 @@ class ColorModel(CompressionModel):
         points = [coordinates, latent_coordinates_2.C]
 
         # Entropy Decoding
-        if not self.entropy_model_map:
-            y_hat = self.entropy_model.decompress(points, strings, shape)
-            # Split coords after entropy coding
-            Q_hat = ME.SparseTensor(coordinates=y_hat.C, features=y_hat.F[:, 128:], device=coordinates.device, tensor_stride=8)
-            y_hat = ME.SparseTensor(coordinates=y_hat.C, features=y_hat.F[:, :128], device=coordinates.device, tensor_stride=8)
+        if isinstance(self.entropy_model, MeanScaleHyperprior_Map):
+            y_hat, Q_hat = self.entropy_model.decompress(points, strings, shape)
         else:
             y_strings, Q_strings = strings[0], strings[1]
             y_shape, Q_shape = shape[0], shape[1]

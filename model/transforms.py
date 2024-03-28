@@ -39,9 +39,9 @@ class AnalysisTransform(nn.Module):
         self.down_2 = ME.MinkowskiConvolution(in_channels=N2, out_channels=N3, kernel_size=3, stride=2, bias=True, dimension=3)
         self.down_3 = ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=3, stride=2, bias=True, dimension=3)
 
-        self.scale_1 = ScaledBlock(N2, encode=True)
-        self.scale_2 = ScaledBlock(N3, encode=True)
-        self.scale_3 = ScaledBlock(N3, encode=True)
+        self.scale_1 = ScaledBlock(N2, encode=True, scale=True)
+        self.scale_2 = ScaledBlock(N3, encode=True, scale=True)
+        self.scale_3 = ScaledBlock(N3, encode=True, scale=True)
 
         self.post_conv = ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=3, stride=1, bias=True, dimension=3)
 
@@ -143,18 +143,13 @@ class SparseSynthesisTransform(torch.nn.Module):
         self.up_2 = GenerativeUpBlock(N1, N2, predict=True)
         self.up_3 = GenerativeUpBlock(N2, N3, predict=True)
 
-        self.scale_1 = ScaledBlock(N1, encode=False)
-        self.scale_2 = ScaledBlock(N1, encode=False)
-        self.scale_3 = ScaledBlock(N2, encode=False)
+        self.scale_1 = ScaledBlock(N1, encode=False, scale=True)
+        self.scale_2 = ScaledBlock(N1, encode=False, scale=True)
+        self.scale_3 = ScaledBlock(N2, encode=False, scale=True)
 
         self.post_conv = nn.Sequential(
             ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
-            #ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=1, stride=1, bias=True, dimension=3),
-            #ME.MinkowskiReLU(inplace=False),
-            #ME.MinkowskiConvolution(in_channels=N3, out_channels=N3, kernel_size=1, stride=1, bias=True, dimension=3),
-            #ME.MinkowskiReLU(inplace=False),
-            #ME.MinkowskiConvolution(in_channels=N3, out_channels=C_out, kernel_size=1, stride=1, bias=True, dimension=3)
             ME.MinkowskiConvolution(in_channels=N3, out_channels=N3//2, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
             ME.MinkowskiConvolution(in_channels=N3//2, out_channels=C_out, kernel_size=3, stride=1, bias=True, dimension=3),

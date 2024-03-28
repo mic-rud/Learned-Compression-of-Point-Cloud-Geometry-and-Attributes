@@ -44,6 +44,7 @@ def count_bits(strings):
     for string in strings:
         if not isinstance(string, list):
             total_bits += len(string) * 8
+            print(len(string)*8)
         else:
             total_bits += count_bits(string)
         
@@ -242,7 +243,7 @@ def pcqm(reference, distorted, pcqm_path, settings=None):
         distorted_path = os.path.join(cwd, distorted)
 
     # Call PCQM
-    command = [pcqm_path + "/PCQM", ref_path, distorted_path, "-fq"]
+    command = [pcqm_path + "/PCQM", ref_path, distorted_path, "-fq", "-r 0.004", "-knn 20", "-rx 2.0"]
     print(command)
     result = subprocess.run(command, stdout=subprocess.PIPE)
 
