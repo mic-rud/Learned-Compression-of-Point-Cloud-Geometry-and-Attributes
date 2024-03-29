@@ -48,7 +48,7 @@ class AnalysisTransform(nn.Module):
         # Conditions
         self.condition_encoder = ConditionEncoder(C_in = 2, 
                                                   N_scales=[N2, N2, N3],
-                                                  N_features=[N1//4, N2//4, N3//4, N3//4])
+                                                  N_features=[2, 2, 2, 2])
 
     def count_per_batch(self, x):
         batch_indices = torch.unique(x.C[:, 0])  # Get unique batch IDs
@@ -157,14 +157,18 @@ class SparseSynthesisTransform(torch.nn.Module):
 
         # Condition
         self.q_pre_conv = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N1//4, out_channels=N1//4, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiConvolution(in_channels=2, out_channels=16, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
+            ME.MinkowskiConvolution(in_channels=16, out_channels=16, kernel_size=1, stride=1, bias=True, dimension=3),
+            ME.MinkowskiReLU(inplace=False),
+            ME.MinkowskiConvolution(in_channels=16, out_channels=2, kernel_size=3, stride=1, bias=True, dimension=3),
         )
 
-        self.q_up_1 = GenerativeUpBlock(N1//4, N1//4)
-        self.q_up_2 = GenerativeUpBlock(N1//4, N2//4)
-        self.q_up_3 = GenerativeUpBlock(N2//4, N2//4)
+        self.q_up_1 = GenerativeUpBlock(2, 2)
+        self.q_up_2 = GenerativeUpBlock(2, 2)
+        self.q_up_3 = GenerativeUpBlock(2, 2)
 
+        """
         self.q_layers_1 = nn.Sequential(
             ME.MinkowskiConvolution(in_channels=N1//4, out_channels=N1//4, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
@@ -176,19 +180,26 @@ class SparseSynthesisTransform(torch.nn.Module):
         self.q_layers_3 = nn.Sequential(
             ME.MinkowskiConvolution(in_channels=N2//4, out_channels=N2//4, kernel_size=3, stride=1, bias=True, dimension=3),
         )
+        """
         
         self.q_predict_1 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N1//4, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiConvolution(in_channels=2, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiReLU(inplace=False),
+            ME.MinkowskiConvolution(in_channels=N1, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
             ME.MinkowskiConvolution(in_channels=N1, out_channels=N1*2, kernel_size=3, stride=1, bias=True, dimension=3),
         )
         self.q_predict_2 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N1//4, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiConvolution(in_channels=2, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiReLU(inplace=False),
+            ME.MinkowskiConvolution(in_channels=N1, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
             ME.MinkowskiConvolution(in_channels=N1, out_channels=N1*2, kernel_size=3, stride=1, bias=True, dimension=3),
         )
         self.q_predict_3 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N2//4, out_channels=N2, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiConvolution(in_channels=2, out_channels=N2, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiReLU(inplace=False),
+            ME.MinkowskiConvolution(in_channels=N2, out_channels=N2, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
             ME.MinkowskiConvolution(in_channels=N2, out_channels=N2*2, kernel_size=3, stride=1, bias=True, dimension=3),
         )
@@ -220,7 +231,7 @@ class SparseSynthesisTransform(torch.nn.Module):
         Q = self.q_pre_conv(Q)
 
         # Layer 1
-        Q = self.q_layers_1(Q)
+        #Q = self.q_layers_1(Q)
         beta_gamma = self.q_predict_1(Q)
         x = self.scale_1(x, beta_gamma)
 
@@ -228,7 +239,7 @@ class SparseSynthesisTransform(torch.nn.Module):
         Q = self.q_up_1(Q, up_coords)
 
         # Layer 2
-        Q = self.q_layers_2(Q)
+        #Q = self.q_layers_2(Q)
         beta_gamma = self.q_predict_2(Q)
         x = self.scale_2(x, beta_gamma)
 
@@ -236,7 +247,7 @@ class SparseSynthesisTransform(torch.nn.Module):
         Q = self.q_up_2(Q, up_coords)
 
         # Layer 3
-        Q = self.q_layers_3(Q)
+        #Q = self.q_layers_3(Q)
         beta_gamma = self.q_predict_3(Q)
         x = self.scale_3(x, beta_gamma)
 

@@ -36,6 +36,14 @@ random.seed(0)
 np.random.seed(0)
 torch.use_deterministic_algorithms(True)
 
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+g = torch.Generator()
+g.manual_seed(0)
+
 class Training():
     def __init__(self, config_path):
         self.load_config(config_path)
@@ -86,8 +94,9 @@ class Training():
         self.train_loader = DataLoader(trainset,
                                        batch_size=self.config["batch_size"],                                       
                                        shuffle=True,
-                                       num_workers=8,
+                                       num_workers=12,
                                        pin_memory=False,
+                                       worker_init_fn=seed_worker,
                                        collate_fn=custom_collate_fn)
         self.val_loader = DataLoader(valset,
                                      batch_size=1,                                       
@@ -146,7 +155,7 @@ class Training():
             # Training
             self.train_epoch(epoch)
 
-            if ((epoch + 1)%9 == 0):
+            if ((epoch + 1)%10 == 0):
                 self.val_epoch(epoch)
 
             self.model_scheduler.step()

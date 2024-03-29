@@ -6,68 +6,8 @@ import copy
 import utils
 
 
-class AQIRN(torch.nn.Module):
-    def __init__(self, N, scale=False):
-        super().__init__()
-        self.scale = scale
-        self.conv_1_1 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N, out_channels=N//4, kernel_size=1, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-            ME.MinkowskiConvolution(in_channels=N//4, out_channels=N//2, kernel_size=1, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-        )
-        self.conv_1_2 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N, out_channels=N//4, kernel_size=1, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-            ME.MinkowskiConvolution(in_channels=N//4, out_channels=N//4, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-            ME.MinkowskiConvolution(in_channels=N//4, out_channels=N//2, kernel_size=1, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-        )
-
-        self.conv_2 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N, out_channels=N, kernel_size=1, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-            ME.MinkowskiConvolution(in_channels=N, out_channels=N, kernel_size=1, stride=1, bias=True, dimension=3),
-        )
-
-
-    def forward(self, x):
-        x_res = ME.SparseTensor(coordinates=x.C, features=x.F.clone(), device=x.device, coordinate_manager=x.coordinate_manager)
-
-        x_1 = self.conv_1_1(x)
-        x_2 = self.conv_1_2(x)
-        x = ME.SparseTensor(coordinates=x_1.C, 
-                            features=torch.cat([x_1.F, x_2.features_at_coordinates(x_1.C.float())], dim=1), 
-                            device=x_1.device, 
-                            tensor_stride=x_1.tensor_stride)
-
-        x = self.conv_2(x)
-        x = ME.SparseTensor(coordinates=x.C, 
-                            features=x.F + x_res.features_at_coordinates(x.C.float()), 
-                            device=x.device, 
-                            tensor_stride=x.tensor_stride)
-        return x
-
-        
 
 class ScaledBlock(torch.nn.Module):
-    def __init__(self, N, encode=True, scale=True):
-        super().__init__()
-
-        self.aq_1 = AQIRN(N)
-        self.aq_2 = Scaling_Block(N, scale=True, encode=encode)
-        self.aq_3 = AQIRN(N)
-
-
-    def forward(self, x, condition):
-        #x = self.aq_1(x)
-        x = self.aq_2(x, condition)
-        #x = self.aq_3(x)
-        return x
-
-
-class Scaling_Block(torch.nn.Module):
     def __init__(self, N, encode=True, scale=True):
         super().__init__()
         self.encode = encode
@@ -76,10 +16,10 @@ class Scaling_Block(torch.nn.Module):
         self.conv_1 = nn.Sequential(
             ME.MinkowskiConvolution(in_channels=N, out_channels=N, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
-            ME.MinkowskiConvolution(in_channels=N, out_channels=N, kernel_size=1, stride=1, bias=True, dimension=3),
+            ME.MinkowskiConvolution(in_channels=N, out_channels=N, kernel_size=3, stride=1, bias=True, dimension=3),
         )
         self.conv_2 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N, out_channels=N, kernel_size=1, stride=1, bias=True, dimension=3),
+            ME.MinkowskiConvolution(in_channels=N, out_channels=N, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
             ME.MinkowskiConvolution(in_channels=N, out_channels=N, kernel_size=3, stride=1, bias=True, dimension=3),
             ME.MinkowskiReLU(inplace=False),
@@ -87,13 +27,16 @@ class Scaling_Block(torch.nn.Module):
         self.gdn = MinkowskiGDN(N, inverse=(not self.encode))
 
     def forward(self, x, condition):
+        x_res = ME.SparseTensor(coordinates=x.C,
+                                features=x.F.clone(),
+                                device=x.device,
+                                tensor_stride=x.tensor_stride)
         x = self.conv_1(x)
 
         # Scale and shift
         beta, gamma = condition.features_at_coordinates(x.C.float()).chunk(2, dim=1)
 
         if self.scale:
-            x = self.gdn(x)
             feats = x.F * beta + gamma
          
 
@@ -103,6 +46,10 @@ class Scaling_Block(torch.nn.Module):
                             tensor_stride=x.tensor_stride)
 
         x = self.conv_2(x)
+        x = ME.SparseTensor(coordinates=x.C,
+                                features=x.F + x_res.features_at_coordinates(x.C.float()),
+                                device=x.device,
+                                tensor_stride=x.tensor_stride)
         return x
 
 
@@ -133,6 +80,11 @@ class GenerativeUpBlock(torch.nn.Module):
         super().__init__()
 
         self.conv = ME.MinkowskiGenerativeConvolutionTranspose(in_channels=N_in, out_channels=N_out, kernel_size=3, stride=2, bias=True, dimension=3)
+        self.conv_2 = nn.Sequential(
+            ME.MinkowskiConvolution(in_channels=N_out, out_channels=N_out, kernel_size=3, stride=1, bias=True, dimension=3),
+            ME.MinkowskiReLU(inplace=False),
+            ME.MinkowskiConvolution(in_channels=N_out, out_channels=N_out, kernel_size=3, stride=1, bias=True, dimension=3)
+        )
         self.prune = ME.MinkowskiPruning()
 
         self.predict = predict
@@ -141,8 +93,6 @@ class GenerativeUpBlock(torch.nn.Module):
                 ME.MinkowskiConvolution(in_channels=N_out, out_channels=N_out, kernel_size=3, stride=1, bias=True, dimension=3),
                 ME.MinkowskiReLU(inplace=False),
                 ME.MinkowskiConvolution(in_channels=N_out, out_channels=N_out, kernel_size=3, stride=1, bias=True, dimension=3),
-                ME.MinkowskiReLU(inplace=False),
-                ME.MinkowskiConvolution(in_channels=N_out, out_channels=1, kernel_size=3, stride=1, bias=True, dimension=3),
             )
 
 
@@ -201,6 +151,7 @@ class GenerativeUpBlock(torch.nn.Module):
         x = self.conv(x)
 
         if self.predict:
+            x = self.conv_2(x)
             predictions = self.occ_predict(x)
 
             occupancy_mask = self._topk_prediction(predictions, k)
@@ -245,6 +196,8 @@ class ConditionEncoder(nn.Module):
             predict_layer = nn.Sequential(
                 ME.MinkowskiConvolution(in_channels=N_features[i+1], out_channels=N_scales[i], kernel_size=3, stride=1, bias=True, dimension=3),
                 ME.MinkowskiReLU(inplace=False),
+                ME.MinkowskiConvolution(in_channels=N_scales[i], out_channels=N_scales[i], kernel_size=1, stride=1, bias=True, dimension=3),
+                ME.MinkowskiReLU(inplace=False),
                 ME.MinkowskiConvolution(in_channels=N_scales[i], out_channels=N_scales[i]*2, kernel_size=3, stride=1, bias=True, dimension=3),
             )
             self.predict_layers.append(predict_layer)
@@ -266,7 +219,7 @@ class ConditionEncoder(nn.Module):
         beta_gammas = []
         for i in range(self.num_stages):
             Q = self.down_layers[i](Q)
-            Q = self.conv_layers[i](Q)
+            #Q = self.conv_layers[i](Q)
             beta_gamma = self.predict_layers[i](Q)
 
             beta_gammas.append(beta_gamma)

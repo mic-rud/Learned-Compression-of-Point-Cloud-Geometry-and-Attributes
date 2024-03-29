@@ -1,5 +1,5 @@
 ## General
-experiment_name: "03_28_Debug_ColorsL2_2models_q_infer_Dense"
+experiment_name: "03_28_Debug_ColorsL2_2models_q_infer_Dense_quadratic"
 results_path : "./results"
 
 # Model
@@ -36,12 +36,12 @@ transforms:
 q_map:
   lambda_A_min: 0
   lambda_A_max: 3200
-  lambda_G_min: 10
+  lambda_G_min: 0
   lambda_G_max: 200
-  mode: "exponential"
+  mode: "quadratic"
 
 ## Training
-device: "1"
+device: "0"
 epochs: 100
 batch_size: 8
 virtual_batches: false
