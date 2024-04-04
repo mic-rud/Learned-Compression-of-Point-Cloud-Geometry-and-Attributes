@@ -1,5 +1,5 @@
 ## General
-experiment_name: "03_28_Debug_ColorsL2_2models_q_infer_Dense"
+experiment_name: "03_29_SSIM_200"
 results_path : "./results"
 
 # Model
@@ -14,11 +14,13 @@ model:
     N1: 64
     N2: 128
     N3: 128
+    source_condition: false
   g_s:
     C_out: 3
     N1: 128
     N2: 128
     N3: 64
+    source_condition: false
 
 ## Data
 data_path: "./data/datasets/full_128"
@@ -35,14 +37,14 @@ transforms:
 #Q_Map
 q_map:
   lambda_A_min: 0
-  lambda_A_max: 3200
-  lambda_G_min: 10
+  lambda_A_max: 400
+  lambda_G_min: 0
   lambda_G_max: 200
   mode: "exponential"
 
 ## Training
-device: "1"
-epochs: 100
+device: "3"
+epochs: 200
 batch_size: 8
 virtual_batches: false
 model_learning_rate: 0.0001
@@ -58,9 +60,10 @@ loss:
     type: "Multiscale_FocalLoss"
     alpha: 0.5
     gamma: 2.0
-  ColorLoss:
-    type: "ColorLoss"
-    loss: "L2"
+  ColorSSIM:
+    type: "ColorSSIM"
+    window_size: 9
+    yuv: false
   bpp-y:
     type: "BPPLoss"
     key: "y"

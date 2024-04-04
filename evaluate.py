@@ -36,8 +36,8 @@ ref_paths = {
 
 q_as = np.arange(21) * 0.05
 q_gs = np.arange(21) * 0.05
-q_as = np.arange(6) * 0.2
-q_gs = np.arange(6) * 0.2
+q_as = np.arange(11) * 0.1
+q_gs = np.arange(11) * 0.1
 
 device_id = 3
 experiments = [
@@ -48,7 +48,9 @@ experiments = [
     #"03_21_Debug_ColorsL2_2models_res_proj"
     #"03_25_Debug_ColorsL2_2models_res_proj_256"
     #"03_26_Debug_ColorsL2_2models_res_proj_128"
-    "03_25_Debug_ColorsSSIM_2models_res_proj"
+    #"03_28_Debug_ColorsL2_2models_q_infer_Dense_quadratic_100",
+    #"03_28_Debug_ColorsL2_2models_q_infer_Dense_100"
+    "Final_L2_200epochs_SC"
     ]
 
 def run_testset(experiments):

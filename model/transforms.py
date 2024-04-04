@@ -29,6 +29,15 @@ class AnalysisTransform(nn.Module):
         N2 = config["N2"]
         N3 = config["N3"]
 
+        if config["source_condition"]:
+            self.cond_conv = nn.Sequential(
+                ME.MinkowskiConvolution(in_channels=C_in, out_channels=2, kernel_size=3, stride=1, bias=True, dimension=3),
+                ME.MinkowskiReLU(inplace=False),
+                ME.MinkowskiConvolution(in_channels=2, out_channels=2, kernel_size=3, stride=1, bias=True, dimension=3),
+            )
+        else: 
+            self.cond_conv = None
+
         # Model
         self.pre_conv = nn.Sequential(
             ME.MinkowskiConvolution(in_channels=C_in, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
@@ -76,6 +85,16 @@ class AnalysisTransform(nn.Module):
         """
         k = []
         k.append(self.count_per_batch(x))
+
+        if self.cond_conv:
+            Q_plus = self.cond_conv(x)
+            Q = ME.SparseTensor(
+                coordinates=Q.C,
+                features=Q.F + Q_plus.features_at_coordinates(Q.C.float()),
+                device=Q.device
+            )
+        
+        # Condition
         Q, beta_gammas = self.condition_encoder(Q)
 
         # Pre-Conv
@@ -133,6 +152,15 @@ class SparseSynthesisTransform(torch.nn.Module):
         N2 = config["N2"]
         N3 = config["N3"]
 
+        if config["source_condition"]:
+            self.cond_conv = nn.Sequential(
+                ME.MinkowskiConvolution(in_channels=N1, out_channels=N1//2, kernel_size=3, stride=1, bias=True, dimension=3),
+                ME.MinkowskiReLU(inplace=False),
+                ME.MinkowskiConvolution(in_channels=N1//2, out_channels=2, kernel_size=3, stride=1, bias=True, dimension=3),
+            )
+        else: 
+            self.cond_conv = None
+
         # Model
         self.pre_conv = nn.Sequential(
             ME.MinkowskiConvolution(in_channels=N1, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
@@ -168,19 +196,6 @@ class SparseSynthesisTransform(torch.nn.Module):
         self.q_up_2 = GenerativeUpBlock(2, 2)
         self.q_up_3 = GenerativeUpBlock(2, 2)
 
-        """
-        self.q_layers_1 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N1//4, out_channels=N1//4, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-        )
-        self.q_layers_2 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N1//4, out_channels=N1//4, kernel_size=3, stride=1, bias=True, dimension=3),
-            ME.MinkowskiReLU(inplace=False),
-        )
-        self.q_layers_3 = nn.Sequential(
-            ME.MinkowskiConvolution(in_channels=N2//4, out_channels=N2//4, kernel_size=3, stride=1, bias=True, dimension=3),
-        )
-        """
         
         self.q_predict_1 = nn.Sequential(
             ME.MinkowskiConvolution(in_channels=2, out_channels=N1, kernel_size=3, stride=1, bias=True, dimension=3),
@@ -226,12 +241,20 @@ class SparseSynthesisTransform(torch.nn.Module):
         x: ME.SparseTensor
             Sparse Tensor containing the upsampled features at location of coords
         """
+        if self.cond_conv:
+            Q_plus = self.cond_conv(x)
+            Q = ME.SparseTensor(
+                coordinates=Q.C,
+                features=Q.F + Q_plus.features_at_coordinates(Q.C.float()),
+                tensor_stride=Q.tensor_stride,
+                device=Q.device
+            )
+
         # Pre-Conv
         x = self.pre_conv(x)
         Q = self.q_pre_conv(Q)
 
         # Layer 1
-        #Q = self.q_layers_1(Q)
         beta_gamma = self.q_predict_1(Q)
         x = self.scale_1(x, beta_gamma)
 
@@ -239,7 +262,6 @@ class SparseSynthesisTransform(torch.nn.Module):
         Q = self.q_up_1(Q, up_coords)
 
         # Layer 2
-        #Q = self.q_layers_2(Q)
         beta_gamma = self.q_predict_2(Q)
         x = self.scale_2(x, beta_gamma)
 
@@ -247,7 +269,6 @@ class SparseSynthesisTransform(torch.nn.Module):
         Q = self.q_up_2(Q, up_coords)
 
         # Layer 3
-        #Q = self.q_layers_3(Q)
         beta_gamma = self.q_predict_3(Q)
         x = self.scale_3(x, beta_gamma)
 

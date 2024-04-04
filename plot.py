@@ -16,19 +16,18 @@ metrics = ["pcqm", "sym_y_psnr", "sym_psnr_mse"]
 related_work = ["YOGA"]
 
 runs = {
-    "03_19_ColorSSIM" : "03_19_Debug_ColorsSSIM_jitter",
     #"03_20_ColorL2" : "03_18_Debug_ColorsL2_25600",
     #"03_20_ColorL2-2_Models" : "03_20_Debug_ColorsL2_2models",
     #"03_20_ColorL2-2_Models_60k" : "03_20_Debug_ColorsL2_2models_60k",
     #"03_20_ColorL2-2_Models_noact" : "03_20_Debug_ColorsL2_2models_scale_noact",
-    "03_21_ColorL2-2_Models_res" : "03_21_Debug_ColorsL2_2models_res_proj",
-    "03_26_ColorL2-128" : "03_26_Debug_ColorsL2_2models_res_proj_128",
-    "03_26_ColorSSIM-128" : "03_25_Debug_ColorsSSIM_2models_res_proj",
+    "L2_quadratic" : "03_28_Debug_ColorsL2_2models_q_infer_Dense_quadratic_100",
+    "L2" : "03_28_Debug_ColorsL2_2models_q_infer_Dense_100",
+    "Final_SC_L2" : "Final_L2_200epochs_SC",
     "YOGA" : "YOGA",
 }
 
 y_lims = {
-    "pcqm": [0.96, 1.00],
+    "pcqm": [0.98, 1.00],
 }
 def plot_experiments():
     """
@@ -165,6 +164,7 @@ def plot_pareto_figs_all(pareto_dataframe):
                 ax.set_ylabel(metric)
                 if metric in y_lims.keys():
                     ax.set_ylim(y_lims[metric][0], y_lims[metric][1])
+                ax.grid()
 
         for key, items in figs.items():
             fig, ax = items

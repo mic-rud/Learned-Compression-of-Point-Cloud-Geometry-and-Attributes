@@ -1,0 +1,73 @@
+## General
+experiment_name: "Final_L2_200epochs_SC_2"
+results_path : "./results"
+
+# Model
+model:
+  entropy_model: 
+    type: "MeanScaleHyperprior_map" 
+    C_bottleneck: 128
+    C_hyper_bottleneck: 128
+    C_Q: 2
+  g_a: 
+    C_in: 4
+    N1: 64
+    N2: 128
+    N3: 128
+    source_condition: True
+  g_s:
+    C_out: 3
+    N1: 128
+    N2: 128
+    N3: 64
+    source_condition: True
+
+## Data
+data_path: "./data/datasets/full_128"
+min_points_train: 300
+min_points_test: 0
+transforms:
+  train:
+    1_ColorJitter:
+      key: "ColorJitter"
+    2_Rotate:
+      key: "RandomRotate"
+      block_size: 128
+
+#Q_Map
+q_map:
+  lambda_A_min: 0
+  lambda_A_max: 6400
+  lambda_G_min: 0
+  lambda_G_max: 200
+  mode: "quadratic"
+
+## Training
+device: "3"
+epochs: 200
+batch_size: 8
+virtual_batches: false
+model_learning_rate: 0.0001
+bottleneck_learning_rate: 0.001
+optimizer: "Adam"
+scheduler_step_size: 50
+scheduler_gamma: 0.1
+clip_grad_norm: 1.0
+
+## Loss:
+loss:
+  Multiscale_FocalLoss:
+    type: "Multiscale_FocalLoss"
+    alpha: 0.5
+    gamma: 2.0
+  ColorLoss:
+    type: "ColorLoss"
+    loss: "L2"
+  bpp-y:
+    type: "BPPLoss"
+    key: "y"
+    weight: 1.0
+  bpp-z:
+    type: "BPPLoss"
+    key: "z"
+    weight: 1.0

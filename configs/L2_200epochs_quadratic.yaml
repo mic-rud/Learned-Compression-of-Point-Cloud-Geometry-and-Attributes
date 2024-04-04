@@ -42,7 +42,7 @@ q_map:
 
 ## Training
 device: "0"
-epochs: 100
+epochs: 200
 batch_size: 8
 virtual_batches: false
 model_learning_rate: 0.0001
