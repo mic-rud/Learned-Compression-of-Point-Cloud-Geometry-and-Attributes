@@ -37,3 +37,20 @@
     cmake ..
     make
 ```
+
+# Installing V-PCC and G-PCC for related work comparison
+G-PCC
+```
+cd dependencies
+git clone https://github.com/MPEGGroup/mpeg-pcc-tmc13.git
+cd mpeg-pcc-tmc13
+mkdir build && cd build
+cmake ..
+make
+```
+V-PCC
+```
+cd dependencies
+git clone https://github.com/MPEGGroup/mpeg-pcc-tmc2.git
+cd mpeg-pcc-tmc2 && ./build.sh
+```

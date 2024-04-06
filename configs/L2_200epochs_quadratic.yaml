@@ -26,9 +26,15 @@ min_points_train: 300
 min_points_test: 0
 transforms:
   train:
-    1_ColorJitter:
-      key: "ColorJitter"
-    2_Rotate:
+    1_Rotate:
+      key: "RandomRotate"
+      block_size: 128
+    2_Project:
+      key: "ProjectTexture"
+      block_size: 128
+      dataset_dir: ./data/datasets
+      probability: 0.5
+    3_Rotate:
       key: "RandomRotate"
       block_size: 128
 

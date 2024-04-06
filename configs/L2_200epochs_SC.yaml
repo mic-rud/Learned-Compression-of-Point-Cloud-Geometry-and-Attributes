@@ -1,5 +1,5 @@
 ## General
-experiment_name: "Final_L2_200epochs_SC_2"
+experiment_name: "Final_L2_200epochs_SC_2_project"
 results_path : "./results"
 
 # Model
@@ -43,14 +43,14 @@ q_map:
   mode: "quadratic"
 
 ## Training
-device: "3"
+device: "1"
 epochs: 200
 batch_size: 8
 virtual_batches: false
 model_learning_rate: 0.0001
 bottleneck_learning_rate: 0.001
 optimizer: "Adam"
-scheduler_step_size: 50
+scheduler_step_size: 80
 scheduler_gamma: 0.1
 clip_grad_norm: 1.0
 

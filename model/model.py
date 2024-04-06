@@ -3,6 +3,11 @@ import numpy as np
 import MinkowskiEngine as ME
 from compressai.models.base import CompressionModel
 
+import os
+import subprocess
+import open3d as o3d
+from bitstream import BitStream
+
 from .entropy_models import *
 from .transforms import *
 import utils
@@ -87,7 +92,7 @@ class ColorModel(CompressionModel):
 
         return output
 
-    def compress(self, x, Q, path=None, latent_path=None):
+    def compress(self, x, Q, path=None):
         """
         Compress a point cloud
         
@@ -133,11 +138,11 @@ class ColorModel(CompressionModel):
 
         # Save the bitstream of return data
         if path:
-            print("Not implemented in model.py")
             self.save_bitstream(path=path,
-                                points=points, 
+                                points=coordinates, 
                                 strings=strings, 
-                                shape=shape)
+                                shape=shape,
+                                k=k)
         else:
             return strings, shape, k, coordinates
 
@@ -171,9 +176,13 @@ class ColorModel(CompressionModel):
         x_hat: torch.tensor, Nx6
             Decompressed and reconstructed point cloud
         """
+        device = self.g_s.down_conv.kernel.device # look up the model device
         # Decode the bitstream
         if path:
-            strings, shape = self.load_bitstream(path)
+            coordinates, strings, shape, k = self.load_bitstream(path)
+            coordinates = coordinates.to(device)
+            batch_vec = torch.zeros((coordinates.shape[0], 1), device=coordinates.device)
+            coordinates = torch.cat([batch_vec, coordinates.contiguous()], dim=1)
 
         # Prepare the coordinates
         latent_coordinates_2 = ME.SparseTensor(coordinates=coordinates.clone(), features=torch.ones((coordinates.shape[0], 1)), tensor_stride=8, device=coordinates.device)
@@ -200,6 +209,61 @@ class ColorModel(CompressionModel):
         
 
 
+
+
+    def save_bitstream(self, 
+                       path,
+                       points,
+                       strings, 
+                       shape,
+                       k):
+        """
+        Save the bitstream to file
+
+        Parameters
+        ----------
+        path: str
+            Path to store the data to
+        strings: list
+            List of strings to be saved, each element is saved to a separate bitstream
+        shape: list
+            Shapes of the feature representation required for decoding
+        """
+        # Prepare paths
+        #path, ending = path.split(".", 1)
+
+        # Initialize Bitstream
+        stream = BitStream()
+
+        # Encode points with G-PCC
+        points_bitstream = self.gpcc_encode(points, path)
+
+        ## Write header
+        # Shape
+        stream.write(shape, np.int32)
+        stream.write(len(points_bitstream), np.int32)
+
+        # String lengths
+        for i, string in enumerate(strings):
+            stream.write(len(string[0]), np.int32)
+        for i, ks in enumerate(k):
+            stream.write(ks, np.int32)
+
+        # Write content
+        stream.write(points_bitstream)
+
+        for i, string in enumerate(strings):
+            stream.write(string[0])
+
+
+        bit_string = stream.__str__()
+        byte_array = bytes(int(bit_string[i:i+8], 2) for i in range(0, len(bit_string), 8))
+
+        with open(path, "wb") as binary:
+            binary.write(byte_array)
+
+
+
     def load_bitstream(self,
                        path):
         """
@@ -218,53 +282,114 @@ class ColorModel(CompressionModel):
             Shapes of the feature representation required for decoding
         """
         # Prepare paths
-        path, ending = path.split(".", 1)
-        aux_path = path + "_aux." + ending
-        string_path = path + "_strings_{}" + ending
+        stream = BitStream()
+        with open(path, "rb") as binary:
+            data = binary.read()
 
-        # Strings
+        stream = BitStream()
+        stream.write(data, bytes)
+
+        # Header
+        shape = [int(stream.read(np.uint32))]
+        len_points_bitstream = stream.read(np.uint32)
+        len_string_1 = stream.read(np.uint32)
+        len_string_2 = stream.read(np.uint32)
+        string_lengths = [len_string_1, len_string_2]
+        k1 = stream.read(np.uint32)
+        k2 = stream.read(np.uint32)
+        k3 = stream.read(np.uint32)
+        k = [[k1], [k2], [k3]]
+
+        # Payload
+        points_bitstream = stream.read(int(len_points_bitstream)*8)
+
         strings = []
         for i in range(2):
-            strings_path = string_path.format(i)
-            with open(strings_path, "rb") as f:
-                string = f.read()
-                strings.append([string])
+            string = stream.read(int(string_lengths[i])*8)
+            bit_string = string.__str__()
+            byte_string = bytes(int(bit_string[i:i+8], 2) for i in range(0, len(bit_string), 8))
+            strings.append([byte_string])
 
-        # Aux info
-        with open(aux_path, "rb") as f:
-            shape = np.frombuffer(f.read(4), dtype=np.int32)
+        coordinates = self.gpcc_decode(points_bitstream, path)
 
-        return strings, shape
+        return coordinates, strings, shape, k
 
 
-
-    def save_bitstream(self, 
-                       path,
-                       strings, 
-                       shape):
+    def gpcc_encode(self, points, directory):
         """
-        Save the bitstream to file
-
-        Parameters
-        ----------
-        path: str
-            Path to store the data to
-        strings: list
-            List of strings to be saved, each element is saved to a separate bitstream
-        shape: list
-            Shapes of the feature representation required for decoding
+        Encode a list of points with G-PCC
         """
-        # Prepare paths
-        path, ending = path.split(".", 1)
-        aux_path = path + "_aux." + ending
-        string_path = path + "_strings_{}" + ending
+        directory, _ = os.path.split(directory)
+        tmp_dir = os.path.join(directory, "points_enc.ply")
+        bin_dir = os.path.join(directory, "points_enc.bin")
 
-        # Save strings
-        for i, string in enumerate(strings):
-            strings_path = string_path.format(i)
-            with open(strings_path, "wb") as f:
-                f.write(string[0])
+        # Save points as ply
+        dtype = o3d.core.float32
+        p_tensor = o3d.core.Tensor(points.detach().cpu().numpy()[:, 1:], dtype=dtype)
+        pc = o3d.t.geometry.PointCloud(p_tensor)
+        o3d.t.io.write_point_cloud(tmp_dir, pc, write_ascii=True)
 
-        # Save aux_info
-        with open(aux_path, "wb") as f:
-            f.write(np.array(shape, dtype=np.int32).tobytes())
+        # G-PCC
+        subp=subprocess.Popen('./dependencies/mpeg-pcc-tmc13/build/tmc3/tmc3'+ 
+                                ' --mode=0' + 
+                                ' --positionQuantizationScale=1' + 
+                                ' --trisoupNodeSizeLog2=0' + 
+                                ' --neighbourAvailBoundaryLog2=8' + 
+                                ' --intra_pred_max_node_size_log2=6' + 
+                                ' --inferredDirectCodingMode=0' + 
+                                ' --maxNumQtBtBeforeOt=4' +
+                                ' --uncompressedDataPath='+tmp_dir + 
+                                ' --compressedStreamPath='+bin_dir, 
+                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Read stdout and stderr
+        stdout, stderr = subp.communicate()
+
+        # Print the outputs
+        if subp.returncode != 0:
+            print("Error occurred:")
+            print(stderr.decode())
+            c=subp.stdout.readline()
+
+        # Read the bytes to return
+        with open(bin_dir, "rb") as binary:
+            data = binary.read()
+        
+        # Clean up
+        os.remove(tmp_dir)
+        os.remove(bin_dir)
+
+        return data
+
+
+
+    def gpcc_decode(self, bin, directory):
+        directory, _ = os.path.split(directory)
+        tmp_dir = os.path.join(directory, "points_dec.ply")
+        bin_dir = os.path.join(directory, "points_dec.bin")
+        
+        # Write to file
+        bit_string = bin.__str__()
+        byte_array = bytes(int(bit_string[i:i+8], 2) for i in range(0, len(bit_string), 8))
+
+        with open(bin_dir, "wb") as binary:
+            binary.write(byte_array)
+        subp=subprocess.Popen('./dependencies/mpeg-pcc-tmc13/build/tmc3/tmc3'+ 
+                                ' --mode=1'+ 
+                                ' --compressedStreamPath='+bin_dir+ 
+                                ' --reconstructedDataPath='+tmp_dir+
+                                ' --outputBinaryPly=0',
+                                shell=True, stdout=subprocess.PIPE)
+        c=subp.stdout.readline()
+        while c:
+            c=subp.stdout.readline()
+            #print(c)
+    
+        # Load ply
+        pcd = o3d.io.read_point_cloud(tmp_dir)
+        points = torch.tensor(pcd.points)
+
+        # Clean up
+        os.remove(tmp_dir)
+        os.remove(bin_dir)
+        return points

@@ -20,10 +20,10 @@ runs = {
     #"03_20_ColorL2-2_Models" : "03_20_Debug_ColorsL2_2models",
     #"03_20_ColorL2-2_Models_60k" : "03_20_Debug_ColorsL2_2models_60k",
     #"03_20_ColorL2-2_Models_noact" : "03_20_Debug_ColorsL2_2models_scale_noact",
-    "L2_quadratic" : "03_28_Debug_ColorsL2_2models_q_infer_Dense_quadratic_100",
-    "L2" : "03_28_Debug_ColorsL2_2models_q_infer_Dense_100",
-    "Final_SC_L2" : "Final_L2_200epochs_SC",
+    "L2" : "Final_L2_200epochs_SC_2",
+    "SSIM" : "Final_SSIM_200_quadratic",
     "YOGA" : "YOGA",
+    "G-PCC" : "G-PCC",
 }
 
 y_lims = {
@@ -131,9 +131,9 @@ def plot_pareto_figs_single(dataframe, key):
             ax.plot(bpp, y)
             ax.set_xlabel("bpp")
             ax.set_ylabel(metric)
-            ax.grid()
             if metric in y_lims.keys():
                 ax.set_ylim(y_lims[metric][0], y_lims[metric][1])
+            ax.grid(visible=True)
 
             fig.tight_layout()
             path = os.path.join(plots, key, "rd-pareto_{}_{}.pdf".format(metric, sequence))
@@ -164,11 +164,11 @@ def plot_pareto_figs_all(pareto_dataframe):
                 ax.set_ylabel(metric)
                 if metric in y_lims.keys():
                     ax.set_ylim(y_lims[metric][0], y_lims[metric][1])
-                ax.grid()
 
         for key, items in figs.items():
             fig, ax = items
             ax.legend()
+            ax.grid(visible=True)
             fig.tight_layout()
             path = os.path.join(plots, "all", "rd-pareto_{}_{}.pdf".format(metric, key))
             fig.savefig(path, bbox_inches="tight")

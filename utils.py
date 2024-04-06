@@ -44,7 +44,6 @@ def count_bits(strings):
     for string in strings:
         if not isinstance(string, list):
             total_bits += len(string) * 8
-            print(len(string)*8)
         else:
             total_bits += count_bits(string)
         
@@ -244,7 +243,6 @@ def pcqm(reference, distorted, pcqm_path, settings=None):
 
     # Call PCQM
     command = [pcqm_path + "/PCQM", ref_path, distorted_path, "-fq", "-r 0.004", "-knn 20", "-rx 2.0"]
-    print(command)
     result = subprocess.run(command, stdout=subprocess.PIPE)
 
     # read output
@@ -255,7 +253,6 @@ def pcqm(reference, distorted, pcqm_path, settings=None):
     pcqm_value = float(pcqm_value_str)  # Convert the value to float
 
     os.chdir(cwd)
-    print(pcqm_value)
 
     return pcqm_value
 
@@ -283,7 +280,6 @@ def save_ply(path, ply):
     # Convert the data values from double to float
     data_lines = lines[i + 1:]
     data = np.genfromtxt(data_lines, dtype=np.int32)
-    print(data.dtype)
 
     # Save the modified PLY file
     with open(path, "w") as ply_file:
@@ -291,3 +287,38 @@ def save_ply(path, ply):
             ply_file.write(line)
         for row in data:
             ply_file.write(" ".join(map(str, row)) + "\n")
+        
+
+def remove_gpcc_header(path):
+    with open(path, "r") as ply_file:
+        lines = ply_file.readlines()
+
+    header = []
+    for i, line in enumerate(lines):
+        header.append(line)
+        if line.strip() == "end_header":
+            break
+
+    # Update the property data type from double to float
+    new_header = []
+    for line in header:
+        if "face" in line or "list" in line:
+            continue
+        elif "green" in line:
+            new_header.append(line.replace("green", "red"))
+        elif "blue" in line:
+            new_header.append(line.replace("blue", "green"))
+        elif "red" in line:
+            new_header.append(line.replace("red", "blue"))
+        else:
+            new_header.append(line)
+
+    # Convert the data values from double to float
+    data_lines = lines[i + 1:]
+    
+    # Save the modified PLY file
+    with open(path, "w") as ply_file:
+        for line in new_header:
+            ply_file.write(line)
+        for row in data_lines:
+            ply_file.write(row)
