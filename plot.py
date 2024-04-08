@@ -12,7 +12,7 @@ from plot import style
 # Runs
 path = "./results"
 plots = "./plot/figures"
-metrics = ["pcqm", "sym_y_psnr", "sym_psnr_mse"]
+metrics = ["pcqm", "sym_y_psnr", "sym_p2p_psnr"]
 related_work = ["YOGA"]
 
 runs = {
@@ -24,6 +24,7 @@ runs = {
     "SSIM" : "Final_SSIM_200_quadratic",
     "YOGA" : "YOGA",
     "G-PCC" : "G-PCC",
+    "V-PCC" : "V-PCC",
 }
 
 y_lims = {
@@ -77,7 +78,7 @@ def plot_all_results(dataframe, pareto_dataframe):
 
 
 def plot_settings(dataframe, pareto_dataframe, key):
-    metrics = ["pcqm", "bpp", "sym_y_psnr", "sym_psnr_mse"]
+    metrics = ["pcqm", "bpp", "sym_y_psnr", "sym_p2p_psnr"]
     for sequence in dataframe["sequence"].unique():
         df = dataframe[dataframe["sequence"]== sequence].sort_values(by=["q_a", "q_g"])
         pareto_df = pareto_dataframe[pareto_dataframe["sequence"]== sequence]

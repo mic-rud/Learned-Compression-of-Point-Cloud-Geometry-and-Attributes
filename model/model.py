@@ -387,7 +387,7 @@ class ColorModel(CompressionModel):
     
         # Load ply
         pcd = o3d.io.read_point_cloud(tmp_dir)
-        points = torch.tensor(pcd.points)
+        points = torch.tensor(np.asarray(pcd.points))
 
         # Clean up
         os.remove(tmp_dir)

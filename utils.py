@@ -202,8 +202,91 @@ def sort_points(points):
     points = points[sorted_coords_indices]
     return points
 
+def pc_metrics(reference, distorted, metric_path, data_path, resolution):
+    """
+    Compute PCQM with 
 
-def pcqm(reference, distorted, pcqm_path, settings=None):
+    Parameters
+    ----------
+    reference: o3d.geometry.PointCloud | string
+        Reference Point Cloud or path to it
+    distorted: o3d.geometry.PointCloud
+        Distorted Point Cloud
+    pcqm_path: str
+        Path to the PCQM binary
+    settings: dictionary (default=None)
+        Extra Settings for metrics
+
+    returns
+    -------
+    pcqm: float
+        PCQM value
+    """
+    data_path = os.path.join(data_path, "tmp")
+    if not os.path.exists(data_path):
+        os.mkdir(data_path)
+
+    # Save reference if o3d
+    if isinstance(reference, o3d.geometry.PointCloud):
+        ref_path = os.path.join(data_path, "ref.ply") 
+        save_ply(ref_path, reference)
+    else:
+        ref_path = os.path.join(reference)
+
+    # Save distorted
+    if isinstance(distorted, o3d.geometry.PointCloud):
+        distorted_path = os.path.join(data_path, "distorted.ply") 
+        save_ply(distorted_path, distorted)
+    else:
+        distorted_path = os.path.join(distorted)
+
+    # Call PCQM
+    command = [metric_path,
+               '--uncompressedDataPath={}'.format(ref_path),
+               '--reconstructedDataPath={}'.format(distorted_path),
+               '--resolution={}'.format(resolution),
+               '--frameCount=1'
+                ]
+    result = subprocess.run(command, stdout=subprocess.PIPE)
+
+
+    # read output
+    string = result.stdout
+    lines = string.decode().split('\n')
+    start = 0
+    for i, line in enumerate(lines):
+        if "infile1 (A)" in line:
+            start = i
+            break
+
+    prefix = ["AB_", "BA_", "sym_"]
+    metrics = {}
+    for j in range(3):
+        metrics[prefix[j] + "p2p_mse"] = float(lines[start+1].split(':')[-1].strip())
+        metrics[prefix[j] + "p2p_psnr"] = float(lines[start+2].split(':')[-1].strip())
+
+        # only symmetric
+        if j == 2:
+            metrics[prefix[j] + "d2_mse"] = float(lines[start+3].split(':')[-1].strip())
+            metrics[prefix[j] + "d2_psnr"] = float(lines[start+4].split(':')[-1].strip())
+            start += 2
+
+        metrics[prefix[j] + "y_mse"] = float(lines[start+3].split(':')[-1].strip())
+        metrics[prefix[j] + "u_mse"] = float(lines[start+4].split(':')[-1].strip())
+        metrics[prefix[j] + "v_mse"] = float(lines[start+5].split(':')[-1].strip())
+        metrics[prefix[j] + "y_psnr"] = float(lines[start+6].split(':')[-1].strip())
+        metrics[prefix[j] + "u_psnr"] = float(lines[start+7].split(':')[-1].strip())
+        metrics[prefix[j] + "v_psnr"] = float(lines[start+8].split(':')[-1].strip())
+
+        # Compute YUV
+        metrics[prefix[j] + "yuv_psnr"] = (1/8) * (6 * metrics[prefix[j] + "y_psnr"] + metrics[prefix[j] + "u_psnr"] + metrics[prefix[j] + "v_psnr"])
+        metrics[prefix[j] + "yuv_mse"] = (1/8) * (6 * metrics[prefix[j] + "y_mse"] + metrics[prefix[j] + "u_mse"] + metrics[prefix[j] + "v_mse"])
+
+        start+=9
+
+    return metrics
+
+def pcqm(reference, distorted, pcqm_path, data_path, settings=None):
     """
     Compute PCQM with 
 
@@ -226,17 +309,20 @@ def pcqm(reference, distorted, pcqm_path, settings=None):
     cwd = os.getcwd()
     pcqm_path = os.path.join(cwd, pcqm_path)
     os.chdir(pcqm_path)
+    data_path = os.path.join(cwd, data_path, "tmp")
+    if not os.path.exists(data_path):
+        os.mkdir(data_path)
 
     # Save reference if o3d
     if isinstance(reference, o3d.geometry.PointCloud):
-        ref_path = os.path.join(pcqm_path, "ref.ply") 
+        ref_path = os.path.join(data_path, "ref.ply") 
         save_ply(ref_path, reference)
     else:
         ref_path = os.path.join(cwd, reference)
 
     # Save distorted
     if isinstance(distorted, o3d.geometry.PointCloud):
-        distorted_path = os.path.join(pcqm_path, "distorted.ply") 
+        distorted_path = os.path.join(data_path, "distorted.ply") 
         save_ply(distorted_path, distorted)
     else:
         distorted_path = os.path.join(cwd, distorted)
@@ -289,7 +375,7 @@ def save_ply(path, ply):
             ply_file.write(" ".join(map(str, row)) + "\n")
         
 
-def remove_gpcc_header(path):
+def remove_gpcc_header(path, gpcc=True):
     with open(path, "r") as ply_file:
         lines = ply_file.readlines()
 
@@ -304,12 +390,15 @@ def remove_gpcc_header(path):
     for line in header:
         if "face" in line or "list" in line:
             continue
-        elif "green" in line:
-            new_header.append(line.replace("green", "red"))
-        elif "blue" in line:
-            new_header.append(line.replace("blue", "green"))
-        elif "red" in line:
-            new_header.append(line.replace("red", "blue"))
+        if gpcc:
+            if "green" in line:
+                new_header.append(line.replace("green", "red"))
+            elif "blue" in line:
+                new_header.append(line.replace("blue", "green"))
+            elif "red" in line:
+                new_header.append(line.replace("red", "blue"))
+            else:
+                new_header.append(line)
         else:
             new_header.append(line)
 

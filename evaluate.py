@@ -42,18 +42,10 @@ resolutions ={
 
 device_id = 0
 experiments = [
-    #"03_19_Debug_ColorsSSIM_jitter",
-    #"03_18_Debug_ColorsL2_25600"
-    #"03_20_Debug_ColorsL2_2models",
-    #"03_20_Debug_ColorsL2_2models_scale_noact"
-    #"03_21_Debug_ColorsL2_2models_res_proj"
-    #"03_25_Debug_ColorsL2_2models_res_proj_256"
-    #"03_26_Debug_ColorsL2_2models_res_proj_128"
-    #"03_28_Debug_ColorsL2_2models_q_infer_Dense_quadratic_100",
-    #"03_28_Debug_ColorsL2_2models_q_infer_Dense_100"
     #"Final_L2_200epochs_SC_2",
     #"Final_SSIM_200_quadratic",
-    "G-PCC"
+    #"V-PCC",
+    #"G-PCC",
     ]
 
 related_work = [
@@ -92,11 +84,12 @@ def run_testset(experiments):
             model.eval()
             model.update()
         elif experiment == "G-PCC":
-            q_as = np.arange(21, 52, 2)
-            q_gs = [0.125, 0.25, 0.5, 0.875, 0.9375]
+            q_as = np.arange(21, 52)
+            q_gs = [0.125, 0.25, 0.5, 0.75, 0.875, 0.9375]
         elif experiment == "V-PCC":
-            q_as = []
-            q_gs = []
+            #q_as = [42, 37, 32, 20, 16]
+            q_as = np.arange(16, 43)
+            q_gs = [32, 28, 24, 27, 22]
         
 
         with torch.no_grad():
@@ -122,11 +115,21 @@ def run_testset(experiments):
                                                                                                 q_g)
 
                         # Compute metrics
-                        metric = PointCloudMetric(source_pc, rec_pc, resolution=resolutions[sequence])
-                        results, error_vectors = metric.compute_pointcloud_metrics(drop_duplicates=False)
+                        #metric = PointCloudMetric(source_pc, rec_pc, resolution=resolutions[sequence])
+                        #results, error_vectors = metric.compute_pointcloud_metrics(drop_duplicates=False)
+
+                        tmp_path = os.path.join(base_path,
+                                                experiment)
+                        results = utils.pc_metrics(ref_paths[data["cubes"][0]["sequence"][0]], 
+                                                     rec_pc, 
+                                                     "dependencies/mpeg-pcc-tmc2/bin/PccAppMetrics",
+                                                     tmp_path,
+                                                     resolution=resolutions[sequence])
+
                         results["pcqm"] = utils.pcqm(ref_paths[data["cubes"][0]["sequence"][0]], 
                                                      rec_pc, 
-                                                     "dependencies/PCQM/build")
+                                                     "dependencies/PCQM/build",
+                                                     tmp_path)
 
                         # Save results
                         results["bpp"] = bpp
@@ -258,6 +261,8 @@ def compress_ours(experiment, model, data, q_a, q_g, device):
 
     return source_pc, rec_pc, bpp, t_compress, t_decompress
 
+
+
 def compress_related(experiment, data, q_a, q_g):
     """
     Compress a point cloud using V-PCC/G-PCC
@@ -273,6 +278,7 @@ def compress_related(experiment, data, q_a, q_g):
     bin_dir = os.path.join(path, "points_enc.bin")
 
     N = data["src"]["points"].shape[1]
+    sequence = data["cubes"][0]["sequence"][0]
 
     # Data processing
     dtype = o3d.core.float32
@@ -287,7 +293,6 @@ def compress_related(experiment, data, q_a, q_g):
 
     if experiment == "G-PCC":
         # Compress the point cloud using G-PCC
-
         command = ['./dependencies/mpeg-pcc-tmc13/build/tmc3/tmc3',
                 '--mode=0',
                 '--trisoupNodeSizeLog2=0',
@@ -339,10 +344,8 @@ def compress_related(experiment, data, q_a, q_g):
                 processing_time_line = line
         t_decompress = float(processing_time_line.split()[-2])
 
-        print(t_compress, t_decompress)
-
         # Read ply (o3d struggles with GBR order)
-        utils.remove_gpcc_header(rec_dir)
+        utils.remove_gpcc_header(rec_dir, gpcc=True)
         rec_pc = o3d.io.read_point_cloud(rec_dir)
         colors = np.asarray(rec_pc.colors)
         colors = colors[:, [2,0,1]]
@@ -354,7 +357,49 @@ def compress_related(experiment, data, q_a, q_g):
         os.remove(bin_dir)
     else: 
         # Compress the point cloud using V-PCC
-        pass
+        occPrecision = 4 if q_g > 16 else 2
+        command = ['./dependencies/mpeg-pcc-tmc2/bin/PccAppEncoder',
+                '--configurationFolder=./dependencies/mpeg-pcc-tmc2/cfg/',
+                '--config=./dependencies/mpeg-pcc-tmc2/cfg/common/ctc-common.cfg',
+                '--config=./dependencies/mpeg-pcc-tmc2/cfg/condition/ctc-all-intra.cfg',
+                '--config=./dependencies/mpeg-pcc-tmc2/cfg/sequence/{}_vox10.cfg'.format(sequence), # Overwrite per sequence later
+                '--frameCount=1',
+                '--geometryQP={}'.format(q_g),
+                '--attributeQP={}'.format(q_a),
+                '--occupancyPrecision={}'.format(occPrecision),
+                '--compressedStreamPath={}'.format(bin_dir),
+                '--uncompressedDataPath={}'.format(src_dir)]
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        out = result.stdout.decode()
+        output_lines = out.split("\n")
+        processing_time_line = None
+        for line in output_lines:
+            if "Processing time (user.self)" in line:
+                processing_time_line = line
+        t_compress = float(processing_time_line.split()[-2])
+
+        bpp = os.path.getsize(bin_dir) * 8 / N
+        # Decode
+        command = ['./dependencies/mpeg-pcc-tmc2/bin/PccAppDecoder',
+                '--inverseColorSpaceConversionConfig=./dependencies/mpeg-pcc-tmc2/cfg/hdrconvert/yuv420torgb444.cfg',
+                '--reconstructedDataPath={}'.format(rec_dir),
+                '--compressedStreamPath={}'.format(bin_dir)]
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        out = result.stdout.decode()
+        output_lines = out.split("\n")
+        processing_time_line = None
+        for line in output_lines:
+            if "Processing time (user.self)" in line:
+                processing_time_line = line
+        t_decompress = float(processing_time_line.split()[-2])
+
+        # Read ply (o3d struggles with GBR order)
+        utils.remove_gpcc_header(rec_dir, gpcc=False)
+        rec_pc = o3d.io.read_point_cloud(rec_dir)
+        colors = np.asarray(rec_pc.colors)
+        rec_pc.colors=o3d.utility.Vector3dVector(colors)
 
     # Reconstruct source
     points = data["src"]["points"]
