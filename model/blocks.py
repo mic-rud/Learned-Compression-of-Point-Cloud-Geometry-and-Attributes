@@ -76,8 +76,9 @@ class ConvBlock(torch.nn.Module):
 
 
 class GenerativeUpBlock(torch.nn.Module):
-    def __init__(self, N_in, N_out, predict=False):
+    def __init__(self, N_in, N_out, predict=False, dense=True):
         super().__init__()
+        self.dense = dense
 
         self.conv = ME.MinkowskiGenerativeConvolutionTranspose(in_channels=N_in, out_channels=N_out, kernel_size=3, stride=2, bias=True, dimension=3)
         self.conv_2 = nn.Sequential(
@@ -151,13 +152,25 @@ class GenerativeUpBlock(torch.nn.Module):
         x = self.conv(x)
 
         if self.predict:
-            x = self.conv_2(x)
-            predictions = self.occ_predict(x)
+            if self.dense:
+                # Standard dense upsampling
+                x = self.conv_2(x)
 
-            occupancy_mask = self._topk_prediction(predictions, k)
-            up_coords = predictions.C[occupancy_mask]
+                predictions = self.occ_predict(x)
 
-            x = self._prune_coords(x, up_coords)
+                occupancy_mask = self._topk_prediction(predictions, k)
+                up_coords = predictions.C[occupancy_mask]
+
+                x = self._prune_coords(x, up_coords)
+            else:
+                predictions = self.occ_predict(x)
+                # Not dense ablation
+                occupancy_mask = self._topk_prediction(predictions, k)
+                up_coords = predictions.C[occupancy_mask]
+
+                x = self._prune_coords(x, up_coords)
+                x = self.conv_2(x)
+
             return x, predictions, up_coords
 
         else:

@@ -40,11 +40,12 @@ resolutions ={
 }
 
 
-device_id = 0
+device_id = 1
 experiments = [
     #"Final_L2_200epochs_SC_2",
+    #"Final_L2_200epochs_SC_2_project",
     #"Final_SSIM_200_quadratic",
-    #"V-PCC",
+    "V-PCC",
     #"G-PCC",
     ]
 
@@ -85,11 +86,11 @@ def run_testset(experiments):
             model.update()
         elif experiment == "G-PCC":
             q_as = np.arange(21, 52)
-            q_gs = [0.125, 0.25, 0.5, 0.75, 0.875, 0.9375]
+            q_gs = [0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 0.875, 0.9375]
         elif experiment == "V-PCC":
-            #q_as = [42, 37, 32, 20, 16]
-            q_as = np.arange(16, 43)
-            q_gs = [32, 28, 24, 27, 22]
+            #q_as = [42, 37, 32, 27, 22]
+            q_as = np.arange(22, 43)
+            q_gs = [32, 28, 24, 20, 16]
         
 
         with torch.no_grad():

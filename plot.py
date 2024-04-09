@@ -16,10 +16,8 @@ metrics = ["pcqm", "sym_y_psnr", "sym_p2p_psnr"]
 related_work = ["YOGA"]
 
 runs = {
-    #"03_20_ColorL2" : "03_18_Debug_ColorsL2_25600",
-    #"03_20_ColorL2-2_Models" : "03_20_Debug_ColorsL2_2models",
-    #"03_20_ColorL2-2_Models_60k" : "03_20_Debug_ColorsL2_2models_60k",
-    #"03_20_ColorL2-2_Models_noact" : "03_20_Debug_ColorsL2_2models_scale_noact",
+    #"L2_proj" : "Final_L2_200epochs_SC_2_project",
+
     "L2" : "Final_L2_200epochs_SC_2",
     "SSIM" : "Final_SSIM_200_quadratic",
     "YOGA" : "YOGA",
@@ -27,8 +25,66 @@ runs = {
     "V-PCC" : "V-PCC",
 }
 
-y_lims = {
-    "pcqm": [0.98, 1.00],
+bd_points = {
+    "L2" : [(0,0), (0.1, 0.1), (0.2, 0.2), (0.5, 0.5), (1.0, 1.0)],
+    "SSIM" : [(0,0), (0.1, 0.1), (0.2, 0.2), (0.5, 0.5), (1.0, 1.0)],
+    "G-PCC" : [(0.125,51), (0.25, 46), (0.5, 40), (0.75, 34), (0.875, 28)], #last: (0.9375, 22) 
+    "V-PCC" : [(0,0), (0.1, 0.1), (0.2, 0.2), (22, 27), (22, 16)],
+}
+pareto_ranges = {
+    "longdress":{
+        "bpp": [0.0, 1], "pcqm": [0.985, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+    },
+    "soldier":{
+        "bpp": [0.0, 0.9], "pcqm": [0.985, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+    },
+    "loot":{
+        "bpp": [0.0, 0.8], "pcqm": [0.985, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+    },
+    "redandblack":{
+        "bpp": [0.0, 0.8], "pcqm": [0.985, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+    },
+    "sarah9":{
+        "bpp": [0.98, 0.9975], "pcqm": [0.98, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+    },
+    "david9":{
+        "bpp": [0.98, 0.9975], "pcqm": [0.98, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+    },
+    "andrew9":{
+        "bpp": [0.98, 0.9975], "pcqm": [0.98, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+    },
+    "phil9":{
+        "bpp": [0.98, 0.9975], "pcqm": [0.98, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+    },
+}
+
+metric_labels = {
+    "pcqm" : r"$1 -$ PCQM",
+    "sym_y_psnr" : r"Y-PSNR [dB]",
+    "sym_yuv_psnr" : r"YUV-PSNR [dB]",
+    "sym_p2p_psnr" : r"D1-PSNR [dB]",
+}
+
+run_colors = {
+    "L2" : style.colors[0],
+    "SSIM" : style.colors[1],
+    "G-PCC" : style.colors[2],
+    "V-PCC" : style.colors[3],
+    "YOGA" : style.colors[4],
+}
+linestyles = {
+    "L2" : style.linestyles[0],
+    "SSIM" : style.linestyles[1],
+    "G-PCC" : style.linestyles[2],
+    "V-PCC" : style.linestyles[3],
+    "YOGA" : style.linestyles[4],
+}
+labels = {
+    "L2" : "Ours ($L_2$)",
+    "SSIM" : "Ours ($SSIM$)",
+    "G-PCC" : "G-PCC",# (tmc13 v23)",
+    "V-PCC" : "V-PCC", #(tmc2 v24)",
+    "YOGA" : "YOGA",
 }
 def plot_experiments():
     """
@@ -72,9 +128,8 @@ def plot_all_results(dataframe, pareto_dataframe):
     Level 1 : Plot per run results
     """
     # Plot rd-curves
+    plot_rd_figs_all(dataframe)
     plot_pareto_figs_all(pareto_dataframe)
-
-
 
 
 def plot_settings(dataframe, pareto_dataframe, key):
@@ -97,10 +152,8 @@ def plot_settings(dataframe, pareto_dataframe, key):
             ax.set_xlabel("q_a")
             ax.set_ylabel("q_g")
             ax.set_zlabel(metric)
-            if metric in y_lims.keys():
-                ax.set_zlim(y_lims[metric][0], y_lims[metric][1])
-                ax.set_ylim(0, 1)
-                ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+            ax.set_xlim(0, 1)
 
 
             ax = fig.add_subplot(122)
@@ -108,9 +161,8 @@ def plot_settings(dataframe, pareto_dataframe, key):
             ax.plot(pareto_df["q_a"], pareto_df["q_g"], color="red", marker="x")
             ax.set_xlabel("q_a")
             ax.set_ylabel("q_g")
-            if metric in y_lims.keys():
-                ax.set_ylim(0, 1)
-                ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+            ax.set_xlim(0, 1)
 
 
             fig.tight_layout()
@@ -132,9 +184,8 @@ def plot_pareto_figs_single(dataframe, key):
             ax.plot(bpp, y)
             ax.set_xlabel("bpp")
             ax.set_ylabel(metric)
-            if metric in y_lims.keys():
-                ax.set_ylim(y_lims[metric][0], y_lims[metric][1])
             ax.grid(visible=True)
+            ax.tick_params(axis='both', which='major', labelsize=18)
 
             fig.tight_layout()
             path = os.path.join(plots, key, "rd-pareto_{}_{}.pdf".format(metric, sequence))
@@ -143,6 +194,9 @@ def plot_pareto_figs_single(dataframe, key):
 
 
 def plot_pareto_figs_all(pareto_dataframe):
+    """
+    All figures as used in the publication
+    """
     for metric in metrics:
         figs = {}
 
@@ -157,14 +211,24 @@ def plot_pareto_figs_all(pareto_dataframe):
                     figs[sequence] = (fig, ax)
 
                 data = df[df["sequence"]== sequence]
-                bpp = data["bpp"]
-                y = data[metric]
 
-                ax.plot(bpp, y, label=method)
-                ax.set_xlabel("bpp")
-                ax.set_ylabel(metric)
-                if metric in y_lims.keys():
-                    ax.set_ylim(y_lims[metric][0], y_lims[metric][1])
+                # Filter data
+                (bpp_min, bpp_max) = pareto_ranges[sequence]["bpp"]
+                (y_min, y_max) = pareto_ranges[sequence][metric]
+                filtered_data = data[(data['bpp'] >= bpp_min) & (data['bpp'] <= bpp_max) & (data[metric] >= y_min) & (data[metric] <= y_max)]
+                bpp = filtered_data["bpp"]
+                y = filtered_data[metric]
+
+                ax.plot(bpp, y, 
+                        label=labels[method],
+                        linestyle=linestyles[method],
+                        linewidth=3,
+                        color=run_colors[method])
+                ax.set_xlabel(r"bpp")
+                ax.set_ylabel(metric_labels[metric])
+                ax.tick_params(axis='both', which='major', labelsize=14)
+                #if metric in metrics.keys():
+                    #ax.set_ylim(metrics[metric][0], y_lims[metric][1])
 
         for key, items in figs.items():
             fig, ax = items
@@ -176,7 +240,58 @@ def plot_pareto_figs_all(pareto_dataframe):
             plt.close(fig)
         
 
+def plot_rd_figs_all(dataframes):
+    """
+    All figures as used in the publication
+    """
+    for metric in metrics:
+        figs = {}
 
+        for method, df in dataframes.items():
+            if sequence == "YOGA":
+                continue # YOGA has no configs
+            for sequence in df["sequence"].unique():
+                # Prepare figure
+                if sequence in figs.keys():
+                    fig, ax = figs[sequence]
+                else:
+                    fig = plt.figure()
+                    ax = fig.add_subplot(111)
+                    figs[sequence] = (fig, ax)
+
+                data = df[df["sequence"]== sequence]
+
+                # Filter by settings
+                tolerance = 1e-4
+                settings = bd_points["method"]
+                mask = np.logical_not(np.logical_or.reduce([
+                    np.logical_and(np.isclose(df['q_a'], q_a_test, atol=tolerance), np.isclose(df['q_g'], q_g_test, atol=tolerance)) for q_a_test, q_g_test in settings
+                ]))
+
+                filtered_data = data[mask]
+                print(filtered_data)
+                bpp = filtered_data["bpp"]
+                y = filtered_data[metric]
+
+                ax.plot(bpp, y, 
+                        label=labels[method],
+                        linestyle=linestyles[method],
+                        linewidth=3,
+                        color=run_colors[method])
+                ax.set_xlabel(r"bpp")
+                ax.set_ylabel(metric_labels[metric])
+                ax.tick_params(axis='both', which='major', labelsize=14)
+                #if metric in metrics.keys():
+                    #ax.set_ylim(metrics[metric][0], y_lims[metric][1])
+
+        for key, items in figs.items():
+            fig, ax = items
+            ax.legend()
+            ax.grid(visible=True)
+            fig.tight_layout()
+            path = os.path.join(plots, "all", "rd-pareto_{}_{}.pdf".format(metric, key))
+            fig.savefig(path, bbox_inches="tight")
+            plt.close(fig)
 
 
 
@@ -193,7 +308,7 @@ def get_pareto_df(dataframe):
         # Iterate through the sorted DataFrame
         for index, row in df.iterrows():
             pcqm = row['pcqm']
-            bpp = row['bpp']
+            #bpp = row['bpp']
     
             if pcqm >= pareto_pcqm:
                 pareto_pcqm = pcqm

@@ -151,6 +151,12 @@ class SparseSynthesisTransform(torch.nn.Module):
         N1 = config["N1"]
         N2 = config["N2"]
         N3 = config["N3"]
+        
+        # Ablation on dense upsampling
+        if "dense" in config.keys():
+            dense = config["dense"]
+        else:
+            dense = True
 
         if config["source_condition"]:
             self.cond_conv = nn.Sequential(
@@ -167,9 +173,9 @@ class SparseSynthesisTransform(torch.nn.Module):
             ME.MinkowskiReLU(inplace=False),
         )
 
-        self.up_1 = GenerativeUpBlock(N1, N1, predict=True)
-        self.up_2 = GenerativeUpBlock(N1, N2, predict=True)
-        self.up_3 = GenerativeUpBlock(N2, N3, predict=True)
+        self.up_1 = GenerativeUpBlock(N1, N1, predict=True, dense=dense)
+        self.up_2 = GenerativeUpBlock(N1, N2, predict=True, dense=dense)
+        self.up_3 = GenerativeUpBlock(N2, N3, predict=True, dense=dense)
 
         self.scale_1 = ScaledBlock(N1, encode=False, scale=True)
         self.scale_2 = ScaledBlock(N1, encode=False, scale=True)
