@@ -90,7 +90,7 @@ def run_testset(experiments):
         elif experiment == "V-PCC":
             #q_as = [42, 37, 32, 27, 22]
             q_as = np.arange(22, 43)
-            q_gs = [32, 28, 24, 20, 16]
+            q_gs = [32, 28, 24, 22, 16]
         
 
         with torch.no_grad():
@@ -160,7 +160,7 @@ def run_testset(experiments):
                         point_size = 1.0 if data["cubes"][0]["sequence"][0] in ["longdress", "soldier", "loot", "longdress"] else 2.0
                         path = os.path.join(base_path,
                                             experiment, 
-                                            "renders_test", 
+                                            "renders_test",
                                             "{}_a{}_g{}_{}.png".format(sequence, str(q_a), str(q_g), "{}"))
                         utils.render_pointcloud(rec_pc, path, point_size=point_size)
                         """

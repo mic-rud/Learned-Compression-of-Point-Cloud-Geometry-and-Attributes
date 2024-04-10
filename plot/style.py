@@ -17,4 +17,4 @@ linestyles = ["solid", "dashdot", "dashed", "dotted", (0, (3, 1, 1, 1))]
 
 colors = [ "#003366", "#e31b23", "#787878", "#1a9e00", "#03b5fc"] #RPTH Palette
 
-markers = [ "+", "x", "2"] 
+markers = [ "o", "v", "s", "P", "X"] 
