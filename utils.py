@@ -4,6 +4,7 @@ import torch
 import subprocess
 import MinkowskiEngine as ME 
 import numpy as np
+import time
 
 class AverageMeter(object):
     """
@@ -411,3 +412,208 @@ def remove_gpcc_header(path, gpcc=True):
             ply_file.write(line)
         for row in data_lines:
             ply_file.write(row)
+
+
+
+def compress_model_ours(experiment, model, data, q_a, q_g, device, base_path):
+    """
+    Compress a point cloud using our model
+    """
+    points = data["src"]["points"].to(device, dtype=torch.float)
+    colors = data["src"]["colors"].to(device, dtype=torch.float)
+    source = torch.concat([points, colors], dim=2)[0]
+    N = source.shape[0]
+
+    # Bin path
+    bin_path = os.path.join(base_path,
+                            experiment,
+                            "tmp")
+    if not os.path.exists(bin_path): 
+        os.mkdir(bin_path)
+    bin_path = os.path.join(bin_path, "bitstream.bin")
+
+    # Q Map
+    if type(q_a) is float or type(q_a) is np.float64:  
+        # Uniform map
+        Q_map = ME.SparseTensor(coordinates=torch.cat([torch.zeros((N, 1), device=device), points[0]], dim=1), 
+                                features=torch.cat([torch.ones((N,1), device=device) * q_g, torch.ones((N,1), device=device) * q_a], dim=1),
+                                device=source.device)
+    else: 
+        feats = torch.cat([torch.tensor(q_g), torch.tensor(q_a)], dim=1).type(torch.float32)
+        Q_map = ME.SparseTensor(coordinates=torch.cat([torch.zeros((N, 1), device=device), points[0]], dim=1), 
+                                features=feats,
+                                device=source.device)
+
+    # Compression
+    torch.cuda.synchronize()
+    t0 = time.time()
+
+    #strings, shapes, k, coordinates = model.compress(source, Q_map)
+    model.compress(source, Q_map, path=bin_path)
+
+    torch.cuda.synchronize()
+    t_compress = time.time() - t0
+
+    # Decompress all rates
+    # Run decompression
+    torch.cuda.synchronize()
+    t0 = time.time()
+    reconstruction = model.decompress(path=bin_path)
+    #reconstruction = model.decompress(coordinates=coordinates, strings=strings, shape=shapes, k=k)
+    torch.cuda.synchronize()
+    t_decompress = time.time() - t0
+                    
+    # Rebuild point clouds
+    source_pc = get_o3d_pointcloud(source)
+    rec_pc = get_o3d_pointcloud(reconstruction)
+
+    bpp = os.path.getsize(bin_path) * 8 / N
+
+    return source_pc, rec_pc, bpp, t_compress, t_decompress
+
+
+
+def compress_related(experiment, data, q_a, q_g, base_path):
+    """
+    Compress a point cloud using V-PCC/G-PCC
+    """
+    path = os.path.join(base_path,
+                        experiment,
+                        "tmp")
+    if not os.path.exists(path):
+        os.mkdir(path)
+    # Directories
+    src_dir = os.path.join(path, "points_enc.ply")
+    rec_dir = os.path.join(path, "points_dec.ply")
+    bin_dir = os.path.join(path, "points_enc.bin")
+
+    N = data["src"]["points"].shape[1]
+    sequence = data["cubes"][0]["sequence"][0]
+
+    # Data processing
+    dtype = o3d.core.float32
+    c_dtype = o3d.core.uint8
+    points = data["src"]["points"].to(dtype=torch.float)
+    colors = torch.clamp(data["src"]["colors"].to(dtype=torch.float) * 255, 0, 255)
+    p_tensor = o3d.core.Tensor(points.detach().cpu().numpy()[0, :, :], dtype=dtype)
+    p_colors = o3d.core.Tensor(colors.detach().cpu().numpy()[0, :, :], dtype=c_dtype)
+    source = o3d.t.geometry.PointCloud(p_tensor)
+    source.point.colors = p_colors
+    o3d.t.io.write_point_cloud(src_dir, source, write_ascii=True)
+
+    if experiment == "G-PCC":
+        # Compress the point cloud using G-PCC
+        command = ['./dependencies/mpeg-pcc-tmc13/build/tmc3/tmc3',
+                '--mode=0',
+                '--trisoupNodeSizeLog2=0',
+                '--mergeDuplicatedPoints=1',
+                '--neighbourAvailBoundaryLog2=8',
+                '--intra_pred_max_node_size_log2=6',
+                '--positionQuantizationScale={}'.format(q_g),
+                '--maxNumQtBtBeforeOt=4',
+                '--minQtbtSizeLog2=0',
+                '--planarEnabled=1',
+                '--planarModeIdcmUse=0',
+                '--convertPlyColourspace=1',
+
+                '--transformType=0',
+                '--qp={}'.format(q_a),
+                '--qpChromaOffset=-2',
+                '--bitdepth=8',
+                '--attrScale=1',
+                '--attrOffset=0',
+                '--attribute=color',
+
+                '--uncompressedDataPath={}'.format(src_dir),
+                '--compressedStreamPath={}'.format(bin_dir)]
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        out = result.stdout.decode()
+        output_lines = out.split("\n")
+        processing_time_line = None
+        for line in output_lines:
+            if "Processing time (user)" in line:
+                processing_time_line = line
+        t_compress = float(processing_time_line.split()[-2])
+
+        bpp = os.path.getsize(bin_dir) * 8 / N
+        # Decode
+        command = ['./dependencies/mpeg-pcc-tmc13/build/tmc3/tmc3',
+                '--mode=1',
+                '--convertPlyColourspace=1',
+                '--outputBinaryPly=0',
+                '--reconstructedDataPath={}'.format(rec_dir),
+                '--compressedStreamPath={}'.format(bin_dir)]
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        out = result.stdout.decode()
+        output_lines = out.split("\n")
+        processing_time_line = None
+        for line in output_lines:
+            if "Processing time (user)" in line:
+                processing_time_line = line
+        t_decompress = float(processing_time_line.split()[-2])
+
+        # Read ply (o3d struggles with GBR order)
+        remove_gpcc_header(rec_dir, gpcc=True)
+        rec_pc = o3d.io.read_point_cloud(rec_dir)
+        colors = np.asarray(rec_pc.colors)
+        colors = colors[:, [2,0,1]]
+        rec_pc.colors=o3d.utility.Vector3dVector(colors)
+
+        # Clean up
+        os.remove(rec_dir)
+        os.remove(src_dir)
+        os.remove(bin_dir)
+    else: 
+        # Compress the point cloud using V-PCC
+        occPrecision = 4 if q_g > 16 else 2
+        command = ['./dependencies/mpeg-pcc-tmc2/bin/PccAppEncoder',
+                '--configurationFolder=./dependencies/mpeg-pcc-tmc2/cfg/',
+                '--config=./dependencies/mpeg-pcc-tmc2/cfg/common/ctc-common.cfg',
+                '--config=./dependencies/mpeg-pcc-tmc2/cfg/condition/ctc-all-intra.cfg',
+                '--config=./dependencies/mpeg-pcc-tmc2/cfg/sequence/{}_vox10.cfg'.format(sequence), # Overwrite per sequence later
+                '--frameCount=1',
+                '--geometryQP={}'.format(q_g),
+                '--attributeQP={}'.format(q_a),
+                '--occupancyPrecision={}'.format(occPrecision),
+                '--compressedStreamPath={}'.format(bin_dir),
+                '--uncompressedDataPath={}'.format(src_dir)]
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        out = result.stdout.decode()
+        output_lines = out.split("\n")
+        processing_time_line = None
+        for line in output_lines:
+            if "Processing time (user.self)" in line:
+                processing_time_line = line
+        t_compress = float(processing_time_line.split()[-2])
+
+        bpp = os.path.getsize(bin_dir) * 8 / N
+        # Decode
+        command = ['./dependencies/mpeg-pcc-tmc2/bin/PccAppDecoder',
+                '--inverseColorSpaceConversionConfig=./dependencies/mpeg-pcc-tmc2/cfg/hdrconvert/yuv420torgb444.cfg',
+                '--reconstructedDataPath={}'.format(rec_dir),
+                '--compressedStreamPath={}'.format(bin_dir)]
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        out = result.stdout.decode()
+        output_lines = out.split("\n")
+        processing_time_line = None
+        for line in output_lines:
+            if "Processing time (user.self)" in line:
+                processing_time_line = line
+        t_decompress = float(processing_time_line.split()[-2])
+
+        # Read ply (o3d struggles with GBR order)
+        remove_gpcc_header(rec_dir, gpcc=False)
+        rec_pc = o3d.io.read_point_cloud(rec_dir)
+        colors = np.asarray(rec_pc.colors)
+        rec_pc.colors=o3d.utility.Vector3dVector(colors)
+
+    # Reconstruct source
+    points = data["src"]["points"]
+    colors = data["src"]["colors"]
+    source = torch.concat([points, colors], dim=2)[0]
+    source_pc = get_o3d_pointcloud(source)
+    return source_pc, rec_pc, bpp, t_compress, t_decompress

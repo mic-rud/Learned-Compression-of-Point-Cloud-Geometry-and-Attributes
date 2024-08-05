@@ -76,9 +76,10 @@ class ConvBlock(torch.nn.Module):
 
 
 class GenerativeUpBlock(torch.nn.Module):
-    def __init__(self, N_in, N_out, predict=False, dense=True):
+    def __init__(self, N_in, N_out, predict=False, dense=True, condition_ablation=None):
         super().__init__()
         self.dense = dense
+        self.condition_ablation = condition_ablation
 
         self.conv = ME.MinkowskiGenerativeConvolutionTranspose(in_channels=N_in, out_channels=N_out, kernel_size=3, stride=2, bias=True, dimension=3)
         self.conv_2 = nn.Sequential(
@@ -154,7 +155,8 @@ class GenerativeUpBlock(torch.nn.Module):
         if self.predict:
             if self.dense:
                 # Standard dense upsampling
-                x = self.conv_2(x)
+                if self.condition_ablation is None:
+                    x = self.conv_2(x)
 
                 predictions = self.occ_predict(x)
 
@@ -169,7 +171,8 @@ class GenerativeUpBlock(torch.nn.Module):
                 up_coords = predictions.C[occupancy_mask]
 
                 x = self._prune_coords(x, up_coords)
-                x = self.conv_2(x)
+                if self.condition_ablation is None:
+                    x = self.conv_2(x)
 
             return x, predictions, up_coords
 
@@ -180,9 +183,12 @@ class GenerativeUpBlock(torch.nn.Module):
 
 
 class ConditionEncoder(nn.Module):
-    def __init__(self, C_in, N_scales, N_features):
+    def __init__(self, C_in, N_scales, N_features, condition_ablation=None):
         super().__init__()
         self.num_stages = len(N_scales)
+
+        # Ablation
+        self.condition_ablation = condition_ablation
 
         self.pre_conv = nn.Sequential(
             ME.MinkowskiConvolution(in_channels=C_in, out_channels=N_features[0], kernel_size=3, stride=1, bias=True, dimension=3),
@@ -233,7 +239,12 @@ class ConditionEncoder(nn.Module):
         for i in range(self.num_stages):
             Q = self.down_layers[i](Q)
             #Q = self.conv_layers[i](Q)
-            beta_gamma = self.predict_layers[i](Q)
+
+            # Ablation
+            if self.condition_ablation is None:
+                beta_gamma = self.predict_layers[i](Q)
+            elif self.condition_ablation == "condition_ablation":
+                beta_gamma = Q
 
             beta_gammas.append(beta_gamma)
         

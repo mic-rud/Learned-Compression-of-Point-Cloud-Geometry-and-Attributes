@@ -5,6 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from scipy.interpolate import griddata
+import scipy.stats as st
 import pandas as pd
 import numpy as np
 
@@ -15,7 +16,10 @@ path = "./results"
 plots = "./plot/figures"
 metrics = ["pcqm", "sym_y_psnr", "sym_p2p_psnr", "sym_yuv_psnr"]
 related_work = ["YOGA"]
-
+top = .97
+bottom = .16
+left = .22
+right = .97
 runs = {
     #"L2_proj" : "Final_L2_200epochs_SC_2_project",
     #"SSIM" : "Final_SSIM_200_quadratic",
@@ -23,19 +27,21 @@ runs = {
     "YOGA" : "YOGA",
     "G-PCC" : "G-PCC",
     "V-PCC" : "V-PCC",
+    #"L2_log" : "Ablation_L2_200epochs_SC_log_q_map",
 }
 
 bd_points = {
     #"L2" : [(0,0), (0.1, 0.2), (0.3, 0.4), (0.4, 0.8)],
     "L2" : [(0.05, 0.1), (0.1, 0.2), (0.2, 0.4), (0.4, 0.8)],
+    "L2_log" : [(0.05, 0.1), (0.1, 0.2), (0.2, 0.4), (0.4, 0.8)],
     #"L2_proj" : [(0,0), (0.1, 0.2), (0.2, 0.4), (0.5, 1.0)],
     "SSIM" : [(0,0), (0.1, 0.1),(0.5, 0.5), (1.0, 1.0)],
     "G-PCC" : [(0.125, 51), (0.25, 46), (0.5, 40), (0.75, 34)], #last: (0.9375, 22) 
-    "V-PCC" : [(32,42), (28, 37), (24, 32), (22, 27), (16, 22)],
+    "V-PCC" : [(32,42), (28, 37), (24, 32), (20, 27), (16, 22)],
 }
 pareto_ranges = {
     "longdress":{
-        "bpp": [0.0, 1], "pcqm": [0.985, 0.9975], "sym_y_psnr": [22, 30], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [60, 70],
+        "bpp": [0.0, 1], "pcqm": [0.985, 0.9975], "sym_y_psnr": [22, 30], "sym_yuv_psnr": [22, 1.00], "sym_p2p_psnr": [60, 70],
     },
     "soldier":{
         "bpp": [0.0, 0.9], "pcqm": [0.985, 0.9975], "sym_y_psnr": [22, 35], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [60, 70],
@@ -47,16 +53,16 @@ pareto_ranges = {
         "bpp": [0.0, 0.8], "pcqm": [0.985, 0.9975], "sym_y_psnr": [24, 32], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [60, 70],
     },
     "sarah9":{
-        "bpp": [0.0, 0.9975], "pcqm": [0.98, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+        "bpp": [0.0, 0.9975], "pcqm": [0.985, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
     },
     "david9":{
-        "bpp": [0.0, 0.9975], "pcqm": [0.98, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+        "bpp": [0.0, 0.9975], "pcqm": [0.985, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
     },
     "andrew9":{
-        "bpp": [0.0, 0.9975], "pcqm": [0.98, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+        "bpp": [0.0, 0.9975], "pcqm": [0.985, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
     },
     "phil9":{
-        "bpp": [0.0, 0.9975], "pcqm": [0.98, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
+        "bpp": [0.0, 0.9975], "pcqm": [0.985, 0.9975], "sym_y_psnr": [0.98, 1.00], "sym_yuv_psnr": [0.98, 1.00], "sym_p2p_psnr": [0.98, 1.00],
     },
 }
 
@@ -74,7 +80,7 @@ run_colors = {
     "V-PCC" : style.colors[1],
     "YOGA" : style.colors[4],
 
-    "L2_proj" : style.colors[1],
+    "L2_log" : style.colors[1],
     "SSIM" : style.colors[1],
 }
 linestyles = {
@@ -83,7 +89,7 @@ linestyles = {
     "V-PCC" : style.linestyles[1],
     "YOGA" : style.linestyles[4],
 
-    "L2_proj" : style.linestyles[1],
+    "L2_log" : style.linestyles[1],
     "SSIM" : style.linestyles[1],
 }
 markers = {
@@ -92,12 +98,12 @@ markers = {
     "V-PCC" : style.markers[1],
     "YOGA" : style.markers[4],
 
-    "L2_proj" : style.linestyles[1],
-    "SSIM" : style.linestyles[1],
+    "L2_log" : style.markers[1],
+    "SSIM" : style.markers[1],
 }
 labels = {
-    "L2" : "Ours ($L_2$)",
-    "L2_proj" : "L2 proj",
+    "L2" : "Ours",
+    "L2_log" : "L2 log",
     "SSIM" : "Ours ($SSIM$)",
     "G-PCC" : "G-PCC",# (tmc13 v23)",
     "V-PCC" : "V-PCC", #(tmc2 v24)",
@@ -111,6 +117,9 @@ def plot_experiments():
 
     plot_rd_figs_all(data)
     compute_bd_deltas(data)
+    
+    # Timing
+    compute_times(data)
 
     # Plot All data separately
     pareto_data = {}
@@ -192,13 +201,13 @@ def plot_settings(dataframe, pareto_dataframe, key):
             cs2 = ax.contourf(X, Y, z_interp, 10, levels=levels, cmap=cm.summer)
             ax.plot(pareto_df["q_a"], pareto_df["q_g"], color=run_colors[key], marker="o", label=labels[key])
 
-            ax.set_xlabel(r"$q_a$")
-            ax.set_ylabel(r"$q_g$", rotation=0, ha="right", va="center")
+            ax.set_xlabel(r"$q^{(A)}$")
+            ax.set_ylabel(r"$q^{(G)}$", rotation=0, ha="right", va="center")
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 1)
             ax.set_xticks([0, 1])
             ax.set_yticks([0, 1])
-            ax.legend(fontsize=16)
+            #ax.legend(fontsize=16)
             ax.xaxis.set_label_coords(0.5, -0.05)
             ax.yaxis.set_label_coords(-0.05, 0.5)
 
@@ -230,11 +239,13 @@ def plot_pareto_figs_single(dataframe, key):
             ax.set_xlabel("bpp")
             ax.set_ylabel(metric)
             ax.grid(visible=True)
-            ax.tick_params(axis='both', which='major', labelsize=18)
+            ax.tick_params(axis='both', which='major', labelsize=22)
 
-            fig.tight_layout()
             path = os.path.join(plots, key, "rd-pareto_{}_{}.pdf".format(metric, sequence))
-            fig.savefig(path, bbox_inches="tight")
+            #fig.tight_layout()
+            fig.subplots_adjust(bottom=bottom, top=top, left=left, right=right)
+            fig.savefig(path)
+            #fig.savefig(path, bbox_inches="tight")
             plt.close(fig)
 
 
@@ -271,15 +282,18 @@ def plot_pareto_figs_all(pareto_dataframe):
                         color=run_colors[method])
                 ax.set_xlabel(r"bpp")
                 ax.set_ylabel(metric_labels[metric])
-                ax.tick_params(axis='both', which='major', labelsize=14)
+                ax.tick_params(axis='both', which='major', labelsize=22)
 
         for key, items in figs.items():
             fig, ax = items
             ax.legend()
             ax.grid(visible=True)
-            fig.tight_layout()
+            #fig.tight_layout()
             path = os.path.join(plots, "all", "rd-pareto_{}_{}.pdf".format(metric, key))
-            fig.savefig(path, bbox_inches="tight")
+
+            fig.subplots_adjust(bottom=bottom, top=top, left=left, right=right)
+            fig.savefig(path)
+            #fig.savefig(path, bbox_inches="tight")
             plt.close(fig)
         
 def filter_config_points(data, config):
@@ -339,17 +353,25 @@ def plot_rd_figs_all(dataframes):
                         color=run_colors[method])
                 ax.set_xlabel(r"bpp")
                 ax.set_ylabel(metric_labels[metric])
-                ax.tick_params(axis='both', which='major', labelsize=14)
-                #if metric in metrics.keys():
-                    #ax.set_ylim(metrics[metric][0], y_lims[metric][1])
+                ax.tick_params(axis='both', which='major', labelsize=22)
+                """
+                if metric == "pcqm":
+                    ax.set_ylim([0.98, 0.9975])
+                if metric == "sym_y_psnr" and sequence == "andrew9":
+                    ax.set_ylim([16, 32])
+                """
+                
 
         for key, items in figs.items():
             fig, ax = items
             ax.legend()
             ax.grid(visible=True)
-            fig.tight_layout()
             path = os.path.join(plots, "all", "rd-config_{}_{}.pdf".format(metric, key))
-            fig.savefig(path, bbox_inches="tight")
+            fig.subplots_adjust(bottom=bottom, top=top, left=left, right=right)
+            fig.savefig(path)
+
+            #fig.tight_layout()
+            #fig.savefig(path, bbox_inches="tight")
             plt.close(fig)
 
 
@@ -421,6 +443,65 @@ def load_csvs():
 
     return data
 
+
+def compute_times(data):
+    # Computes the times
+    summary_data = []
+    for key, results in data.items():
+        if key == "YOGA":
+            continue
+
+        for sequence in results["sequence"].unique():
+            test_sequences = ["loot", "longdress", "soldier", "redandblack"]
+            if not sequence in test_sequences:
+                continue
+            
+
+            if key == "G-PCC":
+                #process per rate
+                rates = [0.125, 0.25, 0.5, 0.75]
+                for rate in rates:
+                    t_compress = results[(results["sequence"] == sequence) & (results["q_g"] == rate)]["t_compress"]
+                    t_decompress = results[(results["sequence"] == sequence) & (results["q_g"] == rate)]["t_decompress"]
+
+                    conf_compress = st.t.interval(0.95, len(t_compress-1), loc=np.mean(t_compress), scale=st.sem(t_compress))
+                    conf_decompress = st.t.interval(0.95, len(t_decompress-1), loc=np.mean(t_decompress), scale=st.sem(t_decompress))
+
+                    summary_data.append([key, sequence, rate, np.mean(t_compress), np.mean(t_compress) - conf_compress[0], np.mean(t_decompress), np.mean(t_decompress) - conf_decompress[0]])
+            else:
+                # process all
+                t_compress = results[results["sequence"] == sequence]["t_compress"]
+                t_decompress = results[results["sequence"] == sequence]["t_decompress"]
+                conf_compress = st.t.interval(0.95, len(t_compress-1), loc=np.mean(t_compress), scale=st.sem(t_compress))
+                conf_decompress = st.t.interval(0.95, len(t_decompress-1), loc=np.mean(t_decompress), scale=st.sem(t_decompress))
+
+                summary_data.append([key, sequence, None, np.mean(t_compress), np.mean(t_compress) - conf_compress[0], np.mean(t_decompress), np.mean(t_decompress) - conf_decompress[0]])
+
+
+        # Calculate per sequence mean per key and rate
+        results = results[results["sequence"].isin(test_sequences)]
+        if key == "G-PCC":
+            rates = [0.125, 0.25, 0.5, 0.75]
+            for rate in rates:
+                    t_compress_seq_rate = results[results["q_g"] == rate]["t_compress"]
+                    t_decompress_seq_rate = results[results["q_g"] == rate]["t_decompress"]
+
+                    mean_t_compress_seq_rate = np.mean(t_compress_seq_rate)
+                    mean_t_decompress_seq_rate = np.mean(t_decompress_seq_rate)
+
+                    summary_data.append([key, "combined", rate, mean_t_compress_seq_rate, np.nan, mean_t_decompress_seq_rate, np.nan])
+
+        t_compress_seq = results["t_compress"]
+        t_decompress_seq = results["t_decompress"]
+
+        mean_t_compress_seq = np.mean(t_compress_seq)
+        mean_t_decompress_seq = np.mean(t_decompress_seq)
+
+        summary_data.append([key, "combined", None, mean_t_compress_seq, np.nan , mean_t_decompress_seq, np.nan])
+
+    summary_df = pd.DataFrame(summary_data, columns=["key", "sequence", "rate", "mean_t_compress", "conf_compress", "mean_t_decompress", "conf_decompress"])
+
+    print(summary_df)
 if __name__ == "__main__":
     plot_experiments()
 

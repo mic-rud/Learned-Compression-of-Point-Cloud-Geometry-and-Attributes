@@ -3,12 +3,15 @@ import matplotlib.pyplot as plt
 
 # Settings 
 matplotlib.use("template")
-fontsize = 18
+fontsize = 22
 plt.rc("font", family="serif", size=fontsize)
 plt.rc("xtick", labelsize=fontsize)
 plt.rc("ytick", labelsize=fontsize)
 plt.rc("axes", axisbelow=True)
 plt.rc("legend", fontsize=fontsize, frameon=True, framealpha=1.0)
+
+matplotlib.rcParams['ps.fonttype'] = 42
+matplotlib.rcParams['pdf.fonttype'] = 42
 
 matplotlib.rcParams["lines.linewidth"] = 1.5
 matplotlib.rcParams["lines.markersize"] = 5

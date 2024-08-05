@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 import MinkowskiEngine as ME
 
-import utils
-from model.blocks import *
+from model.blocks import *  
 
 
 class AnalysisTransform(nn.Module):
@@ -29,6 +28,8 @@ class AnalysisTransform(nn.Module):
         N2 = config["N2"]
         N3 = config["N3"]
 
+        self.condition_ablation = config["condition_ablation"] if "condition_ablation" in config else None
+
         if config["source_condition"]:
             self.cond_conv = nn.Sequential(
                 ME.MinkowskiConvolution(in_channels=C_in, out_channels=2, kernel_size=3, stride=1, bias=True, dimension=3),
@@ -37,6 +38,7 @@ class AnalysisTransform(nn.Module):
             )
         else: 
             self.cond_conv = None
+
 
         # Model
         self.pre_conv = nn.Sequential(
@@ -57,7 +59,8 @@ class AnalysisTransform(nn.Module):
         # Conditions
         self.condition_encoder = ConditionEncoder(C_in = 2, 
                                                   N_scales=[N2, N2, N3],
-                                                  N_features=[2, 2, 2, 2])
+                                                  N_features=[2, 2, 2, 2],
+                                                  condition_ablation=self.condition_ablation)
 
     def count_per_batch(self, x):
         batch_indices = torch.unique(x.C[:, 0])  # Get unique batch IDs
@@ -152,11 +155,13 @@ class SparseSynthesisTransform(torch.nn.Module):
         N2 = config["N2"]
         N3 = config["N3"]
         
+
         # Ablation on dense upsampling
         if "dense" in config.keys():
             dense = config["dense"]
         else:
             dense = True
+
 
         if config["source_condition"]:
             self.cond_conv = nn.Sequential(
@@ -198,9 +203,12 @@ class SparseSynthesisTransform(torch.nn.Module):
             ME.MinkowskiConvolution(in_channels=16, out_channels=2, kernel_size=3, stride=1, bias=True, dimension=3),
         )
 
-        self.q_up_1 = GenerativeUpBlock(2, 2)
-        self.q_up_2 = GenerativeUpBlock(2, 2)
-        self.q_up_3 = GenerativeUpBlock(2, 2)
+        # Condition Ablation
+        self.condition_ablation = config["condition_ablation"] if "condition_ablation" in config else None
+
+        self.q_up_1 = GenerativeUpBlock(2, 2, condition_ablation=self.condition_ablation)
+        self.q_up_2 = GenerativeUpBlock(2, 2, condition_ablation=self.condition_ablation)
+        self.q_up_3 = GenerativeUpBlock(2, 2, condition_ablation=self.condition_ablation)
 
         
         self.q_predict_1 = nn.Sequential(
