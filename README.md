@@ -6,7 +6,7 @@
 ## Table of Contents
 
 - [Overview](#overview)
-- [Methodology](#methodology)
+- [Approach](#approach)
 - [Results](#results)
 - [Usage](#usage)
 - [Installation](#installation)
@@ -22,7 +22,7 @@ The main contribution is the usage of a joint autoencoder to compress the point 
 As this would result in training an ensemble of models (one for each trade-off between rate, geometry quality and attribute quality), we propose to condition the model on the trade-off between the aformentioned triplet at training time, resulting in a single trained model. 
 In contrast to the standard approach for point cloud compression, which requires separate models for geometry and attributes, as well as decoding the geometry for attribute re-projection at the sender, we believe our approach offers more flexibility and reduced encoding latency with a comparable rate-distortion trade-off.
 
-## Methodology
+## Approach
 
 ### Multimodal Conditioning
 
@@ -39,32 +39,48 @@ Our model architecture consists of a single encoder/decoder which is accompanied
 Pareto-Fronts are optimized by grid-searching possible combinations between geometry and attribute quality. Thus, they are optimized per-content. 
 
 <p float="left">
-  <img src="plot/resources/rd-pareto_pcqm_longdress.png" width="100" />
-  <img src="plot/resources/rd-pareto_pcqm_soldier.png" width="100" />
-  <img src="plot/resources/rd-pareto_pcqm_redandblack.png" width="100" />
-  <img src="plot/resources/rd-pareto_pcqm_loot.png" width="100" />
+  <img src="plot/resources/rd-pareto_pcqm_longdress.png" width="200" title="longdress"/>
+  <img src="plot/resources/rd-pareto_pcqm_soldier.png" width="200" title="soldier"/>
+  <img src="plot/resources/rd-pareto_pcqm_redandblack.png" width="200" title="redandblack"/>
+  <img src="plot/resources/rd-pareto_pcqm_loot.png" width="200" title="loot"/>
 </p>
-
-![](plot/resources/rd-pareto_pcqm_longdress.png "longdress") | ![](plot/resources/rd-pareto_pcqm_soldier.png "soldier") | ![](plot/resources/rd-pareto_pcqm_redandblack.png "redandblack") | ![](plot/resources/rd-pareto_pcqm_loot.png "loot") 
 
 ### Generalized Compression (Lossy Geometry, Lossy Attributes)
 We compare against G-PCC and V-PCC for the lossy-geometry, lossy-attribute compression use case. 
 For this, we select 4 configuration pairs of our model, allowing to consistently outperfom G-PCC and perform on-par with V-PCC.
 
-![](plot/resources/rd-config_pcqm_longdress.png "longdress") | ![](plot/resources/rd-config_pcqm_soldier.png "soldier") | ![](plot/resources/rd-config_pcqm_redandblack.png "redandblack") | ![](plot/resources/rd-config_pcqm_loot.png "loot") 
+<p float="left">
+  <img src="plot/resources/rd-config_pcqm_longdress.png" width="200" title="longdress"/>
+  <img src="plot/resources/rd-config_pcqm_soldier.png" width="200" title="soldier"/>
+  <img src="plot/resources/rd-config_pcqm_redandblack.png" width="200" title="redandblack"/>
+  <img src="plot/resources/rd-config_pcqm_loot.png" width="200" title="loot"/>
+</p>
 
-![](plot/resources/rd-config_sym_p2p_psnr_longdress.png "longdress") | ![](plot/resources/rd-config_sym_p2p_psnr_soldier.png "soldier") | ![](plot/resources/rd-config_sym_p2p_psnr_redandblack.png "redandblack") | ![](plot/resources/rd-config_sym_p2p_psnr_loot.png "loot") 
+<p float="left">
+  <img src="plot/resources/rd-config_sym_p2p_psnr_longdress.png" width="200" title="longdress"/>
+  <img src="plot/resources/rd-config_sym_p2p_psnr_soldier.png" width="200" title="soldier"/>
+  <img src="plot/resources/rd-config_sym_p2p_psnr_redandblack.png" width="200" title="redandblack"/>
+  <img src="plot/resources/rd-config_sym_p2p_psnr_loot.png" width="200" title="loot"/>
+</p>
 
-![](plot/resources/rd-config_sym_y_psnr_longdress.png "longdress") | ![](plot/resources/rd-config_sym_y_psnr_soldier.png "soldier") | ![](plot/resources/rd-config_sym_y_psnr_redandblack.png "redandblack") | ![](plot/resources/rd-config_sym_y_psnr_loot.png "loot") 
-
-
-
+<p float="left">
+  <img src="plot/resources/rd-config_sym_y_psnr_longdress.png" width="200" title="longdress"/>
+  <img src="plot/resources/rd-config_sym_y_psnr_soldier.png" width="200" title="soldier"/>
+  <img src="plot/resources/rd-config_sym_y_psnr_redandblack.png" width="200" title="redandblack"/>
+  <img src="plot/resources/rd-config_sym_y_psnr_loot.png" width="200" title="loot"/>
+</p>
 
 ### Latency
 On a NVIDIA RTX 4090, our model achieves significantly faster compression then G-PCC and V-PCC as well as the learning-based YOGA.
 Note that the results for YOGA are obtained from the original paper on different hardware, as it is not yet open-sourced.
 
 ### Visual Results
+<p float="left">
+  <img src="plot/resources/soldier_original.png" width="200" title="Original"/>
+  <img src="plot/resources/soldier_G-PCC_r4.png" width="200" title="G-PCC"/>
+  <img src="plot/resources/soldier_VPCC_r4.png" width="200" title="V-PCC"/>
+  <img src="plot/resources/soldier_Ours_r4.png" width="200" title="Ours"/>
+</p>
 
 
 
