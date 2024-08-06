@@ -16,8 +16,6 @@
 **/__pycache__/
 **/.ipynb_checkpoints
 
-data/*
-metrics/*
 
 !requirements.txt
 

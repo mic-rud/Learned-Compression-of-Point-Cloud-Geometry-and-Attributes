@@ -1,6 +1,3 @@
 [submodule "data"]
 	path = data
 	url = https://git.uni-due.de/ncs/pointcloud-data.git
-[submodule "metrics"]
-	path = metrics
-	url = https://git.uni-due.de/pointclouds/metrics.git
