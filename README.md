@@ -30,7 +30,8 @@ TODO
 
 ### Architecture
 
-TODO
+Our model architecture consists of a single encoder/decoder which is accompanied by a condition map to encode the quality maps into the latent representation.
+![](plot/resources/Architecture.png) 
 
 ## Results
 
@@ -38,23 +39,23 @@ TODO
 Pareto-Fronts are optimized by grid-searching possible combinations between geometry and attribute quality. Thus, they are optimized per-content. 
 
 <p float="left">
-  <img src="plot/figures/all/rd-pareto_pcqm_longdress.pdf" width="100" />
-  <img src="plot/figures/all/rd-pareto_pcqm_soldier.pdf" width="100" />
-  <img src="plot/figures/all/rd-pareto_pcqm_redandblack.pdf" width="100" />
-  <img src="plot/figures/all/rd-pareto_pcqm_loot.pdf" width="100" />
+  <img src="plot/resources/rd-pareto_pcqm_longdress.png" width="100" />
+  <img src="plot/resources/rd-pareto_pcqm_soldier.png" width="100" />
+  <img src="plot/resources/rd-pareto_pcqm_redandblack.png" width="100" />
+  <img src="plot/resources/rd-pareto_pcqm_loot.png" width="100" />
 </p>
 
-![](plot/resources/rd-pareto_pcqm_longdress.png "longdress")  ![](plot/resources/rd-pareto_pcqm_soldier.png "soldier") ![](plot/resources/rd-pareto_pcqm_redandblack.png "redandblack") ![](plot/resources/rd-pareto_pcqm_loot.png "loot") 
+![](plot/resources/rd-pareto_pcqm_longdress.png "longdress") | ![](plot/resources/rd-pareto_pcqm_soldier.png "soldier") | ![](plot/resources/rd-pareto_pcqm_redandblack.png "redandblack") | ![](plot/resources/rd-pareto_pcqm_loot.png "loot") 
 
 ### Generalized Compression (Lossy Geometry, Lossy Attributes)
 We compare against G-PCC and V-PCC for the lossy-geometry, lossy-attribute compression use case. 
 For this, we select 4 configuration pairs of our model, allowing to consistently outperfom G-PCC and perform on-par with V-PCC.
 
-![](plot/resources/rd-config_pcqm_longdress.png "longdress")  ![](plot/resources/rd-config_pcqm_soldier.png "soldier") ![](plot/resources/rd-config_pcqm_redandblack.png "redandblack") ![](plot/resources/rd-config_pcqm_loot.png "loot") 
+![](plot/resources/rd-config_pcqm_longdress.png "longdress") | ![](plot/resources/rd-config_pcqm_soldier.png "soldier") | ![](plot/resources/rd-config_pcqm_redandblack.png "redandblack") | ![](plot/resources/rd-config_pcqm_loot.png "loot") 
 
-![](plot/resources/rd-config_sym_p2p_psnr_longdress.png "longdress")  ![](plot/resources/rd-config_sym_p2p_psnr_soldier.png "soldier") ![](plot/resources/rd-config_sym_p2p_psnr_redandblack.png "redandblack") ![](plot/resources/rd-config_sym_p2p_psnr_loot.png "loot") 
+![](plot/resources/rd-config_sym_p2p_psnr_longdress.png "longdress") | ![](plot/resources/rd-config_sym_p2p_psnr_soldier.png "soldier") | ![](plot/resources/rd-config_sym_p2p_psnr_redandblack.png "redandblack") | ![](plot/resources/rd-config_sym_p2p_psnr_loot.png "loot") 
 
-![](plot/resources/rd-config_sym_y_psnr_longdress.png "longdress")  ![](plot/resources/rd-config_sym_y_psnr_soldier.png "soldier") ![](plot/resources/rd-config_sym_y_psnr_redandblack.png "redandblack") ![](plot/resources/rd-config_sym_y_psnr_loot.png "loot") 
+![](plot/resources/rd-config_sym_y_psnr_longdress.png "longdress") | ![](plot/resources/rd-config_sym_y_psnr_soldier.png "soldier") | ![](plot/resources/rd-config_sym_y_psnr_redandblack.png "redandblack") | ![](plot/resources/rd-config_sym_y_psnr_loot.png "loot") 
 
 
 
