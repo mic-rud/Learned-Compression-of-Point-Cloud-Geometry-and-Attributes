@@ -44,17 +44,17 @@ Pareto-Fronts are optimized by grid-searching possible combinations between geom
   <img src="plot/figures/all/rd-pareto_pcqm_loot.pdf" width="100" />
 </p>
 
-![](plot/figures/all/rd-pareto_pcqm_longdress.pdf "longdress")  ![](plot/figures/all/rd-pareto_pcqm_soldier.pdf "soldier") ![](plot/figures/all/rd-pareto_pcqm_redandblack.pdf "redandblack") ![](plot/figures/all/rd-pareto_pcqm_loot.pdf "loot") 
+![](plot/resources/rd-pareto_pcqm_longdress.png "longdress")  ![](plot/resources/rd-pareto_pcqm_soldier.png "soldier") ![](plot/resources/rd-pareto_pcqm_redandblack.png "redandblack") ![](plot/resources/rd-pareto_pcqm_loot.png "loot") 
 
 ### Generalized Compression (Lossy Geometry, Lossy Attributes)
 We compare against G-PCC and V-PCC for the lossy-geometry, lossy-attribute compression use case. 
 For this, we select 4 configuration pairs of our model, allowing to consistently outperfom G-PCC and perform on-par with V-PCC.
 
-![](plot/figures/all/rd-config_pcqm_longdress.pdf "longdress")  ![](plot/figures/all/rd-config_pcqm_soldier.pdf "soldier") ![](plot/figures/all/rd-config_pcqm_redandblack.pdf "redandblack") ![](plot/figures/all/rd-config_pcqm_loot.pdf "loot") 
+![](plot/resources/rd-config_pcqm_longdress.png "longdress")  ![](plot/resources/rd-config_pcqm_soldier.png "soldier") ![](plot/resources/rd-config_pcqm_redandblack.png "redandblack") ![](plot/resources/rd-config_pcqm_loot.png "loot") 
 
-![](plot/figures/all/rd-config_sym_p2p_psnr_longdress.pdf "longdress")  ![](plot/figures/all/rd-config_sym_p2p_psnr_soldier.pdf "soldier") ![](plot/figures/all/rd-config_sym_p2p_psnr_redandblack.pdf "redandblack") ![](plot/figures/all/rd-config_sym_p2p_psnr_loot.pdf "loot") 
+![](plot/resources/rd-config_sym_p2p_psnr_longdress.png "longdress")  ![](plot/resources/rd-config_sym_p2p_psnr_soldier.png "soldier") ![](plot/resources/rd-config_sym_p2p_psnr_redandblack.png "redandblack") ![](plot/resources/rd-config_sym_p2p_psnr_loot.png "loot") 
 
-![](plot/figures/all/rd-config_sym_y_psnr_longdress.pdf "longdress")  ![](plot/figures/all/rd-config_sym_y_psnr_soldier.pdf "soldier") ![](plot/figures/all/rd-config_sym_y_psnr_redandblack.pdf "redandblack") ![](plot/figures/all/rd-config_sym_y_psnr_loot.pdf "loot") 
+![](plot/resources/rd-config_sym_y_psnr_longdress.png "longdress")  ![](plot/resources/rd-config_sym_y_psnr_soldier.png "soldier") ![](plot/resources/rd-config_sym_y_psnr_redandblack.png "redandblack") ![](plot/resources/rd-config_sym_y_psnr_loot.png "loot") 
 
 
 
