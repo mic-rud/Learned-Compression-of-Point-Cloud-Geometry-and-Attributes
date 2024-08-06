@@ -1,0 +1,11 @@
+info:
+  block_size: [16, 16, 16]
+train:
+  BlueBackpack:
+    "0"
+val:
+  BlueBackpack: 
+    "1"
+test:
+  BlueBackpack: 
+    "2"

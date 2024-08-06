@@ -1,0 +1,45 @@
+info:
+  cube_size: 128
+train:
+  BlueBackpack:
+    "0:249:10"
+  BlueSquat:
+    "0:249:10"
+  CasualSpin:
+    "0:249:10"
+  CasualSquat:
+    "0:249:10"
+  ElegantDance:
+    "0:249:10"
+  ElegantWave:
+    "0:249:10"
+  FlowerDance:
+    "0:249:10"
+  FlowerWave:
+    "0:249:10"
+  HelloGoodbye:
+    "0:249:10"
+  ReadyForWinter:
+    "0:249:10"
+val:
+  Gymnast: 
+    "0"
+  BlueSpin:
+    "0"
+test:
+  loot: 
+    "1200"
+  longdress: 
+    "1300"
+  soldier:
+    "690"
+  redandblack:
+    "1550"
+  andrew9: 
+    "0"
+  david9: 
+    "0"
+  phil9:
+    "0"
+  sarah9:
+    "0"

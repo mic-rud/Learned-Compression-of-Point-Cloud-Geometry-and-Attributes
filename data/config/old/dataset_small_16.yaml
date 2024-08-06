@@ -1,0 +1,32 @@
+info:
+  name: "dataset_small_16"
+  block_size: 16
+train:
+  BlueBackpack:
+    "0"
+  CasualSquat:
+    "0"
+  ElegantWave:
+    "0"
+  FlowerDance:
+    "0"
+  ReadyForWinter:
+    "0"
+val:
+  phil10: 
+    "0"
+  sarah10: 
+    "100"
+  Gymnast: 
+    "0"
+  BlueSpin:
+    "0"
+test:
+  loot: 
+    "1200"
+  longdress: 
+    "1300"
+  soldier:
+    "690"
+  redandblack:
+    "1550"

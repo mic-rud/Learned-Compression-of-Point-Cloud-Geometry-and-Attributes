@@ -1,0 +1,57 @@
+info:
+  block_size: [128, 128, 128]
+train:
+  andrew9:
+    "0:100:20"
+  ricardo9:
+    "0:100:20"
+  david9:
+    "0:100:20"
+  sarah9: 
+    "0:100:20"
+  andrew10:
+    "100:200:40"
+  ricardo10:
+    "100:200:40"
+  david10:
+    "100:200:40"
+  phil10: 
+    "100:200:40"
+  BlueBackpack:
+    "0:249:10"
+  BlueSquat:
+    "0:249:10"
+  CasualSpin:
+    "0:249:10"
+  CasualSquat:
+    "0:249:10"
+  ElegantDance:
+    "0:249:10"
+  ElegantWave:
+    "0:249:10"
+  FlowerDance:
+    "0:249:10"
+  FlowerWave:
+    "0:249:10"
+  HelloGoodbye:
+    "0:249:10"
+  ReadyForWinter:
+    "0:249:10"
+val:
+  phil10: 
+    "0:100:20"
+  sarah10: 
+    "100:200:20"
+  Gymnast: 
+    "0:249:40"
+  BlueSpin:
+    "0:249:40"
+test:
+  loot: 
+    "1200"
+  longdress: 
+    "1300"
+  soldier:
+    "690"
+  redandblack:
+    "1550"

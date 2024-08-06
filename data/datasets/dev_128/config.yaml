@@ -1,0 +1,17 @@
+info:
+  cube_size: 128
+train:
+  Gymnast: 
+    "0:5"
+val:
+  Gymnast: 
+    "0"
+test:
+  loot: 
+    "1200"
+  longdress: 
+    "1300"
+  soldier:
+    "690"
+  redandblack:
+    "1550"

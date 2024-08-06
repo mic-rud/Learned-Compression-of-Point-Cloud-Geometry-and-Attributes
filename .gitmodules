@@ -1,3 +1,0 @@
-[submodule "data"]
-	path = data
-	url = https://git.uni-due.de/ncs/pointcloud-data.git

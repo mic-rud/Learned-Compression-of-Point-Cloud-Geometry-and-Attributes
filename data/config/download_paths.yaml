@@ -1,0 +1,38 @@
+mvub:
+  andrew9   : http://plenodb.jpeg.org/pc/microsoft/andrew9.zip
+  andrew10  : http://plenodb.jpeg.org/pc/microsoft/andrew10.zip
+  david9    : http://plenodb.jpeg.org/pc/microsoft/david9.zip
+  david10   : http://plenodb.jpeg.org/pc/microsoft/david10.zip
+  phil9     : http://plenodb.jpeg.org/pc/microsoft/phil9.zip
+  phil10    : http://plenodb.jpeg.org/pc/microsoft/phil10.zip
+  ricardo9  : http://plenodb.jpeg.org/pc/microsoft/ricardo9.zip
+  ricardo10 : http://plenodb.jpeg.org/pc/microsoft/ricardo10.zip
+  sarah9    : http://plenodb.jpeg.org/pc/microsoft/sarah9.zip
+  sarah10   : http://plenodb.jpeg.org/pc/microsoft/sarah10.zip
+
+8iVFBv2:
+  longdress   : http://plenodb.jpeg.org/pc/8ilabs/longdress.zip
+  loot        : http://plenodb.jpeg.org/pc/8ilabs/loot.zip
+  redandblack : http://plenodb.jpeg.org/pc/8ilabs/redandblack.zip
+  soldier     : http://plenodb.jpeg.org/pc/8ilabs/soldier.zip
+
+uvg-vpc:
+  BlueBackpack : https://ultravideo.fi/UVG-VPC/BlueBackpack_vox10.tar.gz
+  BlueSpin     : https://ultravideo.fi/UVG-VPC/BlueSpin_vox10.tar.gz
+  BlueSquat    : https://ultravideo.fi/UVG-VPC/BlueSquat_vox10.tar.gz
+  CasualSpin   : https://ultravideo.fi/UVG-VPC/CasualSpin_vox10.tar.gz
+  CasualSquat  : https://ultravideo.fi/UVG-VPC/CasualSquat_vox10.tar.gz
+  ElegantDance : https://ultravideo.fi/UVG-VPC/ElegantDance_vox10.tar.gz
+  ElegantWave  : https://ultravideo.fi/UVG-VPC/ElegantWave_vox10.tar.gz
+  FlowerDance  : https://ultravideo.fi/UVG-VPC/FlowerDance_vox10.tar.gz
+  FlowerWave   : https://ultravideo.fi/UVG-VPC/FlowerWave_vox10.tar.gz
+  Gymnast      : https://ultravideo.fi/UVG-VPC/Gymnast_vox10.tar.gz
+  HelloGoodbye : https://ultravideo.fi/UVG-VPC/HelloGoodbye_vox10.tar.gz
+  ReadyForWinter : https://ultravideo.fi/UVG-VPC/ReadyForWinter_vox10.tar.gz
+
+testdata:
+  testdata_nju : https://box.nju.edu.cn/f/5ab2aa4dfd9941f5aaae/?dl=1
+
+QA:
+  AK47: None
+  4armsMonstre: None

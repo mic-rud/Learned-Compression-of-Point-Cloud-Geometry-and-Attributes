@@ -1,0 +1,14 @@
+.env
+*.jpeg
+*.jpg
+*.png
+*.ply
+*.zip
+*.avi
+*.pt
+
+**/__pycache__/
+datasets/*/*
+!datasets/*/.gitkeep
+!datasets/*/*.yaml
+

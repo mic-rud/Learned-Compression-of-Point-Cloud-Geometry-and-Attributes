@@ -1,0 +1,393 @@
+# Information on the dataset
+sequences:
+  mvub:
+    andrew9: 
+      start: 0
+      end:   317
+    andrew10:
+      start: 0
+      end:   317
+    david9: 
+      start: 0
+      end:   215
+    david10:
+      start: 0
+      end:   215
+    phil9:
+      start: 0
+      end:   244
+    phil10:
+      start: 0
+      end:   244
+    ricardo9:
+      start: 0
+      end:   215
+    ricardo10:
+      start: 0
+      end:   215
+    sarah9:
+      start: 0
+      end:   206
+    sarah10:
+      start: 0
+      end:   206
+  8iVFBv2:
+    longdress:
+      start: 1051
+      end:   1350
+    loot:
+      start: 1000
+      end:   1299
+    redandblack:
+      start: 1450
+      end:   1749
+    soldier:
+      start: 536
+      end:   835
+  uvg-vpc:
+    BlueBackpack:
+      start: 0
+      end:   249
+    BlueSpin:
+      start: 0
+      end:   249
+    BlueSquat:
+      start: 0
+      end:   249
+    CasualSpin:
+      start: 0
+      end:   249
+    CasualSquat:
+      start: 0
+      end:   249
+    ElegantDance:
+      start: 0
+      end:   249
+    ElegantWave:
+      start: 0
+      end:   249
+    FlowerDance:
+      start: 0
+      end:   249
+    FlowerWave:
+      start: 0
+      end:   249
+    Gymnast:
+      start: 0
+      end:   249
+    HelloGoodbye:
+      start: 0
+      end:   249
+    ReadyForWinter:
+      start: 0
+      end:   249
+  QA:
+    4armsMonstre: 
+      start: 0
+      end:   3
+    AK47: 
+      start: 0
+      end:   3
+    Asterix:
+      start: 0
+      end:   3
+    AustralianCattleDog:
+      start: 0
+      end:   3
+    AWP:
+      start: 0
+      end:   3
+    aya:
+      start: 0
+      end:   3
+    Baldness:
+      start: 0
+      end:   3
+    banjofrog:
+      start: 0
+      end:   3
+    BasketballHoop:
+      start: 0
+      end:   3
+    basketballplayer:
+      start: 0
+      end:   3
+    BB8New:
+      start: 0
+      end:   3
+    Beagle:
+      start: 0
+      end:   3
+    BirdToucan:
+      start: 0
+      end:   3
+    Birdv1:
+      start: 0
+      end:   3
+    Birdv5:
+      start: 0
+      end:   3
+    BirdV2:
+      start: 0
+      end:   3
+    BirdV3:
+      start: 0
+      end:   3
+    BirdV4:
+      start: 0
+      end:   3
+    BirdV6:
+      start: 0
+      end:   3
+    BricksWall:
+      start: 0
+      end:   3
+    bristleback:
+      start: 0
+      end:   3
+    Caffe:
+      start: 0
+      end:   3
+    CardiganWelshCorgi:
+      start: 0
+      end:   3
+    Cat:
+      start: 0
+      end:   3
+    CatV1:
+      start: 0
+      end:   3
+    Chair56:
+      start: 0
+      end:   3
+    Chicken:
+      start: 0
+      end:   3
+    crabV2:
+      start: 0
+      end:   3
+    Crocodile:
+      start: 0
+      end:   3
+    dancer:
+      start: 0
+      end:   3
+    DesertEagle:
+      start: 0
+      end:   3
+    DobermanPinscher:
+      start: 0
+      end:   3
+    Dolphin:
+      start: 0
+      end:   3
+    Dragon:
+      start: 0
+      end:   3
+    Duck:
+      start: 0
+      end:   3
+    DuckV1:
+      start: 0
+      end:   3
+    Earth:
+      start: 0
+      end:   3
+    EasternHognoseSnake:
+      start: 0
+      end:   3
+    EmperorPenguin:
+      start: 0
+      end:   3
+    exercise:
+      start: 0
+      end:   3
+    Facade00009:
+      start: 0
+      end:   3
+    Facade00064:
+      start: 0
+      end:   3
+    Fish:
+      start: 0
+      end:   3
+    FishV1:
+      start: 0
+      end:   3
+    FrogV1:
+      start: 0
+      end:   3
+    GermanBoxer:
+      start: 0
+      end:   3
+    GreenDinosaur:
+      start: 0
+      end:   3
+    GreenMonstre:
+      start: 0
+      end:   3
+    Handcream:
+      start: 0
+      end:   3
+    HearNoEvilMonkey:
+      start: 0
+      end:   3
+    Horse:
+      start: 0
+      end:   3
+    HorseV2:
+      start: 0
+      end:   3
+    HouseWithoutRoof:
+      start: 0
+      end:   3
+    Ignatius:
+      start: 0
+      end:   3
+    Jaguar:
+      start: 0
+      end:   3
+    jetanima:
+      start: 0
+      end:   3
+    Kangaroo:
+      start: 0
+      end:   3
+    Lizard:
+      start: 0
+      end:   3
+    LongDinosaur:
+      start: 0
+      end:   3
+    lowpolycarsset1:
+      start: 0
+      end:   3
+    lowpolycarsset2:
+      start: 0
+      end:   3
+    Man:
+      start: 0
+      end:   3
+    Mario:
+      start: 0
+      end:   3
+    matilda:
+      start: 0
+      end:   3
+    model:
+      start: 0
+      end:   3
+    MuteSwan:
+      start: 0
+      end:   3
+    ParrotV1:
+      start: 0
+      end:   3
+    PjanicFace:
+      start: 0
+      end:   3
+    QQdog:
+      start: 0
+      end:   3
+    queen:
+      start: 0
+      end:   3
+    RattleSnake:
+      start: 0
+      end:   3
+    RedHorse:
+      start: 0
+      end:   3
+    Rock1:
+      start: 0
+      end:   3
+    RpClaudiaRigged:
+      start: 0
+      end:   3
+    RpDennisPosed004:
+      start: 0
+      end:   3
+    RpEricRigged001:
+      start: 0
+      end:   3
+    RpFabiennePercyPosed001:
+      start: 0
+      end:   3
+    RpManuelAnimated001Dancing:
+      start: 0
+      end:   3
+    RpMeiPosed001:
+      start: 0
+      end:   3
+    RyukinGoldfish:
+      start: 0
+      end:   3
+    ScarletSnake:
+      start: 0
+      end:   3
+    SeaTurtle:
+      start: 0
+      end:   3
+    SeaTurtleV2:
+      start: 0
+      end:   3
+    Shark:
+      start: 0
+      end:   3
+    Shiva:
+      start: 0
+      end:   3
+    Soccer:
+      start: 0
+      end:   3
+    SpiderMonkey:
+      start: 0
+      end:   3
+    Statue:
+      start: 0
+      end:   3
+    StatueV1:
+      start: 0
+      end:   3
+    StreetRoad:
+      start: 0
+      end:   3
+    Table:
+      start: 0
+      end:   3
+    TableAndChairs:
+      start: 0
+      end:   3
+    Thaidancer:
+      start: 0
+      end:   3
+    TibetanFox:
+      start: 0
+      end:   3
+    ToyDog:
+      start: 0
+      end:   3
+    TRex:
+      start: 0
+      end:   3
+    Truck:
+      start: 0
+      end:   3
+    Whale:
+      start: 0
+      end:   3
+    WhiteTailedDeer:
+      start: 0
+      end:   3
+    Wood:
+      start: 0
+      end:   3
+
+
+
+# Relative paths for loading the raw data
+relative_paths:
+  mvub: "{sequence}/{sequence}/ply/frame{frame_idx:04d}.ply"
+  uvg-vpc: "{sequence}/{sequence}/ply_vox10/ply_xyz_rgb/{sequence}_UVG_vox10_25_0_250_{frame_idx:04d}.ply"
+  8iVFBv2: "{sequence}/{sequence}/Ply/{sequence}_vox10_{frame_idx:04d}.ply"
+  QA: "QA/{sequence}.ply"
