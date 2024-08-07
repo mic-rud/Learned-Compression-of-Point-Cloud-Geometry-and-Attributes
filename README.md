@@ -24,25 +24,36 @@ We consider the problem of compressing a point set $\mathcal{P} = (\mathbf{g}, \
 
 ### Multimodal Conditioning
 
-To achieve this goal, we propose an approach for conditioning a model on the tradeoff between geometry quality, attribute quality and the bitrate. To achieve this, the model is conditionend on a quality map $\mathbf{q}=[\mathbf{q}^{(G)}, \mathbf{q}^{(A)} for the quality of the geometry and the attributes.
+To achieve this goal, we propose an approach for conditioning a model on the tradeoff between geometry quality, attribute quality and the bitrate. To achieve this, the model is conditionend on a quality map $\mathbf{q}=[\mathbf{q}^{(G)}, \mathbf{q}^{(A)}]$ for the quality of the geometry and the attributes.
 
-We arrive at a loss function between the quality of both modalities and the rate
-$$ \mathcal{L} = \mathcal{R} + \mathcal{D}_A + \mathcal{D}_G $$
+We arrive at a loss function between the quality of both modalities and the rate 
+
+$$\mathcal{L} = \mathcal{R} + \mathcal{D}_A + \mathcal{D}_G$$
 
 with the geometry distortion loss $\mathcal{D}_G$ and attribute loss $\mathcal{D}_A$ integrating a per-voxel loss map $\boldsymbol{\lambda}^{(G)}$ and $\boldsymbol{\lambda}^{(A)}$ respectively.
 
 The values of the loss maps are derived through a quadratic weighting function i.e. $T_A: [0, 1] \mapsto {[\lambda_{\text{min}}, \lambda_{\text{max}}]}$ with $T_A(x) = (\lambda^A_{\text{max}} - \lambda^A_{\text{min}}) x^2 + \lambda^A_{\text{min}}$, such that $\boldsymbol{\lambda}^{(A)}_u = T_A(\mathbf{q}^{(A)}_u)$, with $u \in \mathbf{g}$.
 The same mapping holds for $\boldsymbol{\lambda}^{(G)}_u$.
 
-The Geomeetry loss $\mathcal{D}_G $ is based on the [Focal Loss](https://arxiv.org/abs/1708.02002), which has been used in [multiscale point cloud geometry compression](https://arxiv.org/abs/2011.03799):
-    $$ \mathcal{D}_G = - \sum_{k=0}^{K-1} \sum_{u \in \mathbf{\tilde{d}}^{(k)} } \boldsymbol{\lambda}_u^{(G, k)} (1 -\dot{\mathbf{p}}_u^{(k)} ))^{\gamma} \log(\dot{\mathbf{p}}_u^{(k)}) \\
-    \text{ with } \dot{\mathbf{p}}_u^{(k)} = \begin{cases}
-        \mathbf{\tilde{p}}_u^{(k)} &\text{if } u \in \mathbf{g}^{(k)} \\
-        1 - \mathbf{\tilde{p}}_u^{(k)}  &\text{else}
-  \end{cases} \; ,$$ 
+The Geomeetry loss $\mathcal{D}_G$ is based on the [Focal Loss](https://arxiv.org/abs/1708.02002), which has been used in [multiscale point cloud geometry compression](https://arxiv.org/abs/2011.03799):
+
+```math
+\mathcal{D}_G = - \sum_{k=0}^{K-1} \sum_{u \in \mathbf{\tilde{d}}^{(k)} } \boldsymbol{\lambda}_u^{(G, k)} (1 -\dot{\mathbf{p}}_u^{(k)} ))^{\gamma} \log(\dot{\mathbf{p}}_u^{(k)})
+```
+
+```math
+\text{ with } \dot{\mathbf{p}}_u^{(k)} = 
+\begin{cases}
+    \mathbf{\tilde{p}}_u^{(k)} &\text{if } u \in \mathbf{g}^{(k)} \\
+    1 - \mathbf{\tilde{p}}_u^{(k)}  &\text{else} \end{cases} \; ,
+```
+
+
 the attribute component $\mathcal{D}_A$ relying on element-wise regression
 
-$$\mathcal{D}_A = \sum_{u \in \mathbf{g} \cap \tilde{\mathbf{g}}} \boldsymbol{\lambda}_u^{(A)} \lVert \mathbf{a}_u - \mathbf{\tilde{a}}_u \rVert_2^2 $$
+```math
+\mathcal{D}_A = \sum_{u \in \mathbf{g} \cap \tilde{\mathbf{g}}} \boldsymbol{\lambda}_u^{(A)} \lVert \mathbf{a}_u - \mathbf{\tilde{a}}_u \rVert_2^2
+```
 
 ### Architecture
 
