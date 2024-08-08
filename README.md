@@ -65,58 +65,21 @@ Our model architecture consists of a single encoder/decoder which is accompanied
 ### Pareto-Fronts
 Pareto-Fronts are optimized by grid-searching possible combinations between geometry and attribute quality. Thus, they are optimized per-content. 
 
-<p float="left" style="text-align:center;">
-  <img src="plot/resources/rd-pareto_pcqm_longdress.png" width="200" title="longdress"/>
-  <img src="plot/resources/rd-pareto_pcqm_soldier.png" width="200" title="soldier"/>
-  <img src="plot/resources/rd-pareto_pcqm_redandblack.png" width="200" title="redandblack"/>
-  <img src="plot/resources/rd-pareto_pcqm_loot.png" width="200" title="loot"/><br>
-  <div style="display:inline-block; width:200px; text-align:center;">longdress</div>
-  <div style="display:inline-block; width:200px; text-align:center;">soldier</div>
-  <div style="display:inline-block; width:200px; text-align:center;">redandblack</div>
-  <div style="display:inline-block; width:200px; text-align:center;">loot</div>
-</p>
+| ![longdress](plot/resources/rd-pareto_pcqm_longdress.png) | ![soldier](plot/resources/rd-pareto_pcqm_soldier.png) | ![redandblack](plot/resources/rd-pareto_pcqm_redandblack.png) | ![loot](plot/resources/rd-pareto_pcqm_loot.png) |
+|:---:|:---:|:---:|:---:|
+| **longdress** | **soldier** | **redandblack** | **loot** |
 
-### Generalized Compression (Lossy Geometry, Lossy Attributes)
+
+### Compression Performance (Lossy Geometry, Lossy Attributes)
 We compare against G-PCC and V-PCC for the lossy-geometry, lossy-attribute compression use case. 
 For this, we select 4 configuration pairs of our model, allowing to consistently outperfom G-PCC and perform on-par with V-PCC.
 
-<div style="text-align:center;">
-  <!-- First Row of Images -->
-  <div style="display:inline-block; vertical-align:top;">
-    <img src="plot/resources/rd-config_pcqm_longdress.png" width="200" title="longdress"/>
-    <img src="plot/resources/rd-config_pcqm_soldier.png" width="200" title="soldier"/>
-    <img src="plot/resources/rd-config_pcqm_redandblack.png" width="200" title="redandblack"/>
-    <img src="plot/resources/rd-config_pcqm_loot.png" width="200" title="loot"/>
-  </div>
-  
-  <!-- Second Row of Images -->
-  <div style="display:inline-block; vertical-align:top;">
-    <img src="plot/resources/rd-config_sym_p2p_psnr_longdress.png" width="200" title="longdress"/>
-    <img src="plot/resources/rd-config_sym_p2p_psnr_soldier.png" width="200" title="soldier"/>
-    <img src="plot/resources/rd-config_sym_p2p_psnr_redandblack.png" width="200" title="redandblack"/>
-    <img src="plot/resources/rd-config_sym_p2p_psnr_loot.png" width="200" title="loot"/>
-  </div>
+| ![longdress](plot/resources/rd-config_pcqm_longdress.png) | ![soldier](plot/resources/rd-config_pcqm_soldier.png) | ![redandblack](plot/resources/rd-config_pcqm_redandblack.png) | ![loot](plot/resources/rd-config_pcqm_loot.png) |
+|:---:|:---:|:---:|:---:|
+| ![longdress](plot/resources/rd-config_sym_p2p_psnr_longdress.png) | ![soldier](plot/resources/rd-config_sym_p2p_psnr_soldier.png) | ![redandblack](plot/resources/rd-config_sym_p2p_psnr_redandblack.png) | ![loot](plot/resources/rd-config_sym_p2p_psnr_loot.png) |
+| ![longdress](plot/resources/rd-config_sym_y_psnr_longdress.png) | ![soldier](plot/resources/rd-config_sym_y_psnr_soldier.png) | ![redandblack](plot/resources/rd-config_sym_y_psnr_redandblack.png) | ![loot](plot/resources/rd-config_sym_y_psnr_loot.png) |
+| **longdress** | **soldier** | **redandblack** | **loot** |
 
-  <!-- Third Row of Images with Labels -->
-  <div style="display:inline-block; vertical-align:top;">
-    <div style="display:inline-block; text-align:center;">
-      <img src="plot/resources/rd-config_sym_y_psnr_longdress.png" width="200" title="longdress"/><br>
-      <label style="display:block; width:200px;">longdress</label>
-    </div>
-    <div style="display:inline-block; text-align:center;">
-      <img src="plot/resources/rd-config_sym_y_psnr_soldier.png" width="200" title="soldier"/><br>
-      <label style="display:block; width:200px;">soldier</label>
-    </div>
-    <div style="display:inline-block; text-align:center;">
-      <img src="plot/resources/rd-config_sym_y_psnr_redandblack.png" width="200" title="redandblack"/><br>
-      <label style="display:block; width:200px;">redandblack</label>
-    </div>
-    <div style="display:inline-block; text-align:center;">
-      <img src="plot/resources/rd-config_sym_y_psnr_loot.png" width="200" title="loot"/><br>
-      <label style="display:block; width:200px;">loot</label>
-    </div>
-  </div>
-</div>
 
 ### Latency
 On a machine with a NVIDIA RTX 4090 and AMD EPYC 7542, our model achieves significantly faster compression then G-PCC and V-PCC as well as the learning-based YOGA.
@@ -130,24 +93,10 @@ Note that the results for YOGA are obtained from the original paper on different
 | Ours | 0.75s | 1.84s | 120.1 MB
 
 ### Visual Results
-<p style="text-align:center;">
-  <span style="display:inline-block; width:200px;">
-    <img src="plot/resources/soldier_original.png" width="200" alt="Original"/><br>
-    <label>Original</label>
-  </span>
-  <span style="display:inline-block; width:200px;">
-    <img src="plot/resources/soldier_G-PCC_r4.png" width="200" title="G-PCC"/><br>
-    <label>G-PCC</label>
-  </span>
-  <span style="display:inline-block; width:200px;">
-    <img src="plot/resources/soldier_VPCC_r4.png" width="200" title="V-PCC"/><br>
-    <label>V-PCC</label>
-  </span>
-  <span style="display:inline-block; width:200px;">
-    <img src="plot/resources/soldier_Ours_r4.png" width="200" title="Ours"/><br>
-    <label>Ours</label>
-  </span>
-</p>
+| ![Original](plot/resources/soldier_original.png) | ![G-PCC](plot/resources/soldier_G-PCC_r4.png) | ![V-PCC](plot/resources/soldier_VPCC_r4.png) | ![Ours](plot/resources/soldier_Ours_r4.png) |
+|:--------:|:-----:|:-----:|:----:|
+| Original | G-PCC | V-PCC | Ours |
+
 
 
 
@@ -202,11 +151,16 @@ cd mpeg-pcc-tmc2 && ./build.sh
 
 
 ### Preparing the Dataset
-To prepare the dataset 
+We use the [8iVFBv2](http://plenodb.jpeg.org/pc/8ilabs) and the [MVUB](https://plenodb.jpeg.org/pc/microsoft) dataset for testing. For training, we sample point clouds from [UVG-VPC](https://ultravideo.fi/UVG-VPC/)
+To prepare the dataset automatically, run
 
 ```
-TODO 
+cd data
+python download_rad_pointclouds.py 
 ```
+
+(This downloads raw data for all 3 datasets, so it will fill up your disk)
+Datasets are specified in a config file (pointcloud and frames), a dataset configuration can be found in ./data/datasets/full_128.
 
 
 ### Training
@@ -215,6 +169,9 @@ We provide sample configurations in ./configs for training a model.
 ```
 python train.py --config=./configs/<yourConfig>
 ```
+
+Trained weights can be found here:
+TODO
 
 
 ### Evaluation
@@ -230,6 +187,7 @@ and to create the plots after evaluation, run
 python plot.py 
 ```
 
+(For both, you migth adapt which results you want to use for regenerating the evaluations)
 
 
 
