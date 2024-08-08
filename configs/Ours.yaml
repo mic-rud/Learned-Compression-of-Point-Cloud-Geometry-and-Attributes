@@ -1,27 +1,26 @@
 ## General
-experiment_name: "03_21_Debug_ColorsL2_2models_res_proj"
+experiment_name: "Ours"
 results_path : "./results"
 
 # Model
 model:
   entropy_model: 
-    type: "MeanScaleHyperprior" 
+    type: "MeanScaleHyperprior_map" 
     C_bottleneck: 128
     C_hyper_bottleneck: 128
-  entropy_model_map: 
-    type: "MeanScaleHyperprior" 
-    C_bottleneck: 32
-    C_hyper_bottleneck: 32
+    C_Q: 2
   g_a: 
     C_in: 4
     N1: 64
     N2: 128
     N3: 128
+    source_condition: True
   g_s:
     C_out: 3
     N1: 128
     N2: 128
     N3: 64
+    source_condition: True
 
 ## Data
 data_path: "./data/datasets/full_128"
@@ -31,30 +30,28 @@ transforms:
   train:
     1_ColorJitter:
       key: "ColorJitter"
-    2_Project:
-      key: "ProjectTexture"
-      block_size: 128
-      dataset_dir: ./data/datasets
-      probability: 0.5
-    4_Rotate:
+    2_Rotate:
       key: "RandomRotate"
       block_size: 128
 
 #Q_Map
 q_map:
-  q_a: 25600
-  q_g: 400
+  lambda_A_min: 0
+  lambda_A_max: 6400
+  lambda_G_min: 0
+  lambda_G_max: 200
+  mode: "exponential"
 
 ## Training
-device: "1"
-epochs: 400
+device: "3"
+epochs: 200
 batch_size: 8
 virtual_batches: false
 model_learning_rate: 0.0001
 bottleneck_learning_rate: 0.001
 optimizer: "Adam"
-scheduler_step_size: 150
-scheduler_gamma: 0.5
+scheduler_step_size: 80
+scheduler_gamma: 0.1
 clip_grad_norm: 1.0
 
 ## Loss:
