@@ -208,14 +208,14 @@ Datasets are specified in a config file (pointcloud and frames), a dataset confi
 
 
 ### Training
-We provide sample configurations in ./configs for training a model.
+We provide a configuration in ./configs for training our model.
 
 ```
-python train.py --config=./configs/<yourConfig>
+python train.py --config=./configs/Ours.yaml
 ```
 
-Trained weights can be found here:
-TODO
+Training takes roughly 1-2 days on an NVIDIA RTX 4090. 
+Trained weights: COMING SOON
 
 
 ### Evaluation
