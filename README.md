@@ -64,21 +64,53 @@ Our model architecture consists of a single encoder/decoder which is accompanied
 
 ### Pareto-Fronts
 Pareto-Fronts are optimized by grid-searching possible combinations between geometry and attribute quality. Thus, they are optimized per-content. 
-
-| ![longdress](plot/resources/rd-pareto_pcqm_longdress.png) | ![soldier](plot/resources/rd-pareto_pcqm_soldier.png) | ![redandblack](plot/resources/rd-pareto_pcqm_redandblack.png) | ![loot](plot/resources/rd-pareto_pcqm_loot.png) |
-|:---:|:---:|:---:|:---:|
-| **longdress** | **soldier** | **redandblack** | **loot** |
+<table>
+  <tr>
+    <td><img src="plot/resources/rd-pareto_pcqm_longdress.png" width="200" alt="longdress"/></td>
+    <td><img src="plot/resources/rd-pareto_pcqm_soldier.png" width="200" alt="soldier"/></td>
+    <td><img src="plot/resources/rd-pareto_pcqm_redandblack.png" width="200" alt="redandblack"/></td>
+    <td><img src="plot/resources/rd-pareto_pcqm_loot.png" width="200" alt="loot"/></td>
+  </tr>
+  <tr>
+    <td style="text-align:center;"><b>longdress</b></td>
+    <td style="text-align:center;"><b>soldier</b></td>
+    <td style="text-align:center;"><b>redandblack</b></td>
+    <td style="text-align:center;"><b>loot</b></td>
+  </tr>
+</table>
 
 
 ### Compression Performance (Lossy Geometry, Lossy Attributes)
 We compare against G-PCC and V-PCC for the lossy-geometry, lossy-attribute compression use case. 
 For this, we select 4 configuration pairs of our model, allowing to consistently outperfom G-PCC and perform on-par with V-PCC.
 
-| ![longdress](plot/resources/rd-config_pcqm_longdress.png) | ![soldier](plot/resources/rd-config_pcqm_soldier.png) | ![redandblack](plot/resources/rd-config_pcqm_redandblack.png) | ![loot](plot/resources/rd-config_pcqm_loot.png) |
-|:---:|:---:|:---:|:---:|
-| ![longdress](plot/resources/rd-config_sym_p2p_psnr_longdress.png) | ![soldier](plot/resources/rd-config_sym_p2p_psnr_soldier.png) | ![redandblack](plot/resources/rd-config_sym_p2p_psnr_redandblack.png) | ![loot](plot/resources/rd-config_sym_p2p_psnr_loot.png) |
-| ![longdress](plot/resources/rd-config_sym_y_psnr_longdress.png) | ![soldier](plot/resources/rd-config_sym_y_psnr_soldier.png) | ![redandblack](plot/resources/rd-config_sym_y_psnr_redandblack.png) | ![loot](plot/resources/rd-config_sym_y_psnr_loot.png) |
-| **longdress** | **soldier** | **redandblack** | **loot** |
+<table>
+  <tr>
+    <td><img src="plot/resources/rd-config_pcqm_longdress.png" width="200" alt="longdress"/></td>
+    <td><img src="plot/resources/rd-config_pcqm_soldier.png" width="200" alt="soldier"/></td>
+    <td><img src="plot/resources/rd-config_pcqm_redandblack.png" width="200" alt="redandblack"/></td>
+    <td><img src="plot/resources/rd-config_pcqm_loot.png" width="200" alt="loot"/></td>
+  </tr>
+  <tr>
+    <td><img src="plot/resources/rd-config_sym_p2p_psnr_longdress.png" width="200" alt="longdress"/></td>
+    <td><img src="plot/resources/rd-config_sym_p2p_psnr_soldier.png" width="200" alt="soldier"/></td>
+    <td><img src="plot/resources/rd-config_sym_p2p_psnr_redandblack.png" width="200" alt="redandblack"/></td>
+    <td><img src="plot/resources/rd-config_sym_p2p_psnr_loot.png" width="200" alt="loot"/></td>
+  </tr>
+  <tr>
+    <td><img src="plot/resources/rd-config_sym_y_psnr_longdress.png" width="200" alt="longdress"/></td>
+    <td><img src="plot/resources/rd-config_sym_y_psnr_soldier.png" width="200" alt="soldier"/></td>
+    <td><img src="plot/resources/rd-config_sym_y_psnr_redandblack.png" width="200" alt="redandblack"/></td>
+    <td><img src="plot/resources/rd-config_sym_y_psnr_loot.png" width="200" alt="loot"/></td>
+  </tr>
+  <tr>
+    <td style="text-align:center;"><b>longdress</b></td>
+    <td style="text-align:center;"><b>soldier</b></td>
+    <td style="text-align:center;"><b>redandblack</b></td>
+    <td style="text-align:center;"><b>loot</b></td>
+  </tr>
+</table>
+
 
 
 ### Latency
@@ -93,9 +125,21 @@ Note that the results for YOGA are obtained from the original paper on different
 | Ours | 0.75s | 1.84s | 120.1 MB
 
 ### Visual Results
-| ![Original](plot/resources/soldier_original.png) | ![G-PCC](plot/resources/soldier_G-PCC_r4.png) | ![V-PCC](plot/resources/soldier_VPCC_r4.png) | ![Ours](plot/resources/soldier_Ours_r4.png) |
-|:--------:|:-----:|:-----:|:----:|
-| Original | G-PCC | V-PCC | Ours |
+<table>
+  <tr>
+    <td><img src="plot/resources/soldier_original.png" width="200" alt="Original"/></td>
+    <td><img src="plot/resources/soldier_G-PCC_r4.png" width="200" alt="G-PCC"/></td>
+    <td><img src="plot/resources/soldier_VPCC_r4.png" width="200" alt="V-PCC"/></td>
+    <td><img src="plot/resources/soldier_Ours_r4.png" width="200" alt="Ours"/></td>
+  </tr>
+  <tr>
+    <td style="text-align:center;"><b>Original</b></td>
+    <td style="text-align:center;"><b>G-PCC</b></td>
+    <td style="text-align:center;"><b>V-PCC</b></td>
+    <td style="text-align:center;"><b>Ours</b></td>
+  </tr>
+</table>
+
 
 
 
@@ -164,14 +208,14 @@ Datasets are specified in a config file (pointcloud and frames), a dataset confi
 
 
 ### Training
-We provide sample configurations in ./configs for training a model.
+We provide a configuration in ./configs for training our model.
 
 ```
-python train.py --config=./configs/<yourConfig>
+python train.py --config=./configs/Ours.yaml
 ```
 
-Trained weights can be found here:
-TODO
+Training takes roughly 1-2 days on an NVIDIA RTX 4090. 
+Trained weights: COMING SOON
 
 
 ### Evaluation
