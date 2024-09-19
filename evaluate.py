@@ -42,13 +42,9 @@ resolutions ={
 
 device_id = 1
 experiments = [
-    #"Final_L2_200epochs_SC_2",
-    #"Final_L2_200epochs_SC_2_project",
-    #"Final_SSIM_200_quadratic",
-    #"Ablation_NoCondition_200epochs_v2",
-    #"Ablation_L2_200epochs_SC_log_q_map",
-    #"V-PCC",
-    #"G-PCC",
+    "Ours",
+    "V-PCC",
+    "G-PCC",
     ]
 
 related_work = [

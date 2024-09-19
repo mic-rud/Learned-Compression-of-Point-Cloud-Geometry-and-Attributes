@@ -1,0 +1,62 @@
+batch_size: 8
+bottleneck_learning_rate: 0.001
+clip_grad_norm: 1.0
+data_path: ./data/datasets/full_128
+device: '3'
+epochs: 200
+experiment_name: Ours
+loss:
+  ColorLoss:
+    loss: L2
+    type: ColorLoss
+  Multiscale_FocalLoss:
+    alpha: 0.5
+    gamma: 2.0
+    type: Multiscale_FocalLoss
+  bpp-y:
+    key: y
+    type: BPPLoss
+    weight: 1.0
+  bpp-z:
+    key: z
+    type: BPPLoss
+    weight: 1.0
+min_points_test: 0
+min_points_train: 300
+model:
+  entropy_model:
+    C_Q: 2
+    C_bottleneck: 128
+    C_hyper_bottleneck: 128
+    type: MeanScaleHyperprior_map
+  g_a:
+    C_in: 4
+    N1: 64
+    N2: 128
+    N3: 128
+    source_condition: true
+  g_s:
+    C_out: 3
+    N1: 128
+    N2: 128
+    N3: 64
+    source_condition: true
+model_learning_rate: 0.0001
+optimizer: Adam
+q_map:
+  lambda_A_max: 6400
+  lambda_A_min: 0
+  lambda_G_max: 200
+  lambda_G_min: 0
+  mode: quadratic
+results_path: ./results
+scheduler_gamma: 0.1
+scheduler_step_size: 50
+transforms:
+  train:
+    1_ColorJitter:
+      key: ColorJitter
+    2_Rotate:
+      block_size: 128
+      key: RandomRotate
+virtual_batches: false
