@@ -3,7 +3,10 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2408.00599-blue.svg)](https://arxiv.org/abs/2408.00599)
 
 ***Updates:***
-This is (old) code for the pre-print paper! If you want to re-run or compare to our approach, please use and cite the [repository](https://github.com/ikt-luh/Unified-Point-Cloud-Compression) of the MMSys'26 publication.
+
+This is (old) code for the pre-print paper! 
+
+If you want to re-run or compare to our approach, please use and cite the [repository](https://github.com/ikt-luh/Unified-Point-Cloud-Compression) of the MMSys'26 publication.
 
 
 
